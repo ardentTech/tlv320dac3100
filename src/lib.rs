@@ -29,6 +29,10 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     pub fn reset(&mut self) -> Result<(), <I2C as ErrorType>::Error> {
         self.page0.software_reset(&mut self.i2c, &mut self.delay)
     }
+
+    pub fn set_dac_volume(&mut self) {
+
+    }
 }
 
 #[cfg(test)]
