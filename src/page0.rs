@@ -7,6 +7,7 @@ const PAGE_ID: u8 = 0x0;
 // registers
 const SOFTWARE_RESET: u8 = 0x01;
 const OT_FLAG: u8 = 0x03;
+const CLOCK_GEN_MUXING: u8 = 0x04;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
@@ -14,6 +15,20 @@ const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 pub(crate) enum Channel {
     Left,
     Right
+}
+
+pub(crate) enum PllClockIn {
+    Mclk = 0x0,
+    Bclk = 0x1,
+    Gpio1 = 0x2,
+    Din = 0x3,
+}
+
+pub(crate) enum CodecClkIn {
+    Mclk = 0x0,
+    Bclk = 0x1,
+    Gpio1 = 0x2,
+    PllClk = 0x3,
 }
 
 pub(crate) struct Page0 {}
@@ -24,11 +39,17 @@ impl Page for Page0 {
 
 impl Page0 {
 
-    // registers 65, 66
-    // TODO ensure the Channel enum is a zero-cost abstraction
-    pub(crate) fn dac_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C, channel: Channel, db: f32) -> Result<(), <I2C as ErrorType>::Error> {
-        self.select_page(i2c)?;
+    pub(crate) fn clock_gen_muxing<I2C: I2c>(
+        &mut self,
+        i2c: &mut I2C,
+        pll_clock_in: PllClockIn,
+        codec_clk_in: CodecClkIn
+    ) -> Result<(), <I2C as ErrorType>::Error> {
+        let reg_value = ((pll_clock_in as u8) << 2) | codec_clk_in as u8;
+        self.write_register(i2c, CLOCK_GEN_MUXING, reg_value)
+    }
 
+    pub(crate) fn dac_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C, channel: Channel, db: f32) -> Result<(), <I2C as ErrorType>::Error> {
         let db_constrained: f32 = if db > 24.0 {
             24.0
         } else if db < -63.5 {
@@ -43,19 +64,14 @@ impl Page0 {
         } else {
             DAC_RIGHT_VOLUME_CONTROL
         };
-        self.write_register(i2c, register, reg_val as u8)?;
-        Ok(())
+        self.write_register(i2c, register, reg_val as u8)
     }
 
-    // register 3
     pub(crate) fn ot_flag<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, <I2C as ErrorType>::Error> {
-        self.select_page(i2c)?;
         Ok(self.read_register(i2c, OT_FLAG)? >> 1)
     }
 
-    // register 1
     pub(crate) fn software_reset<I2C: I2c, D: hal::delay::DelayNs>(&mut self, i2c: &mut I2C, mut delay: D) -> Result<(), <I2C as ErrorType>::Error> {
-        self.select_page(i2c)?;
         self.write_register(i2c, SOFTWARE_RESET, 0x1)?;
         delay.delay_ns(10);
         Ok(())
@@ -66,10 +82,34 @@ impl Page0 {
 mod tests {
     use embedded_hal::i2c::ErrorKind;
     use embedded_hal_mock::eh1::delay::NoopDelay;
-    use crate::*;
     use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
-    use crate::page0::{Channel, DAC_LEFT_VOLUME_CONTROL, DAC_RIGHT_VOLUME_CONTROL, OT_FLAG, SOFTWARE_RESET};
+    use crate::page0::*;
     use crate::page::{ADDRESS, PAGE_CONTROL_REGISTER};
+
+    #[test]
+    fn clock_gen_muxing_i2c_err() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [CLOCK_GEN_MUXING, 0xa].to_vec()).with_error(ErrorKind::Other),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        let err = page.clock_gen_muxing(&mut i2c, PllClockIn::Gpio1, CodecClkIn::Gpio1).unwrap_err();
+        assert_eq!(err, ErrorKind::Other);
+        i2c.done();
+    }
+
+    #[test]
+    fn clock_gen_muxing_ok() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [CLOCK_GEN_MUXING, 0xa].to_vec()),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        page.clock_gen_muxing(&mut i2c, PllClockIn::Gpio1, CodecClkIn::Gpio1).unwrap();
+        i2c.done();
+    }
 
     #[test]
     fn dac_volume_control_i2c_err() {

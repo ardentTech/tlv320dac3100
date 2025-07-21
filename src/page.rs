@@ -7,6 +7,8 @@ pub trait Page {
     fn get_id() -> u8;
 
     fn read_register<I2C: I2c>(&self, i2c: &mut I2C, reg: u8) -> Result<u8, <I2C as ErrorType>::Error> {
+        // TODO should select_page and write_read be in a transaction?
+        self.select_page(i2c)?;
         let mut buf = [0u8];
         i2c.write_read(ADDRESS, &[reg], &mut buf)?;
         Ok(buf[0])
@@ -17,6 +19,8 @@ pub trait Page {
     }
 
     fn write_register<I2C: I2c>(&self, i2c: &mut I2C, reg: u8, payload: u8) -> Result<(), <I2C as ErrorType>::Error> {
+        // TODO should select_page and write be in a transaction?
+        self.select_page(i2c)?;
         Ok(i2c.write(ADDRESS, &[reg, payload])?)
     }
 }
