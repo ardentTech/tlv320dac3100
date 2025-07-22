@@ -5,16 +5,19 @@ use hal::i2c::{ErrorType, I2c};
 use crate::page::{Page, TLV320DAC3100Error};
 
 const PAGE_ID: u8 = 0x0;
-const MAX_PLL_DIV: u8 = 0x8;
-const MIN_PLL_DIV: u8 = 0x1;
-const MAX_PLL_MUL: u8 = 0x10;
-const MIN_PLL_MUL: u8 = 0x1;
+const MAX_PLL_P: u8 = 0x8;
+const MIN_PLL_P: u8 = 0x1;
+const MAX_PLL_R: u8 = 0x10;
+const MIN_PLL_R: u8 = 0x1;
+const MAX_PLL_J: u8 = 0x3f;
+const MIN_PLL_J: u8 = 0x1;
 
 // registers
 const SOFTWARE_RESET: u8 = 0x01;
 const OT_FLAG: u8 = 0x03;
 const CLOCK_GEN_MUXING: u8 = 0x04;
 const PLL_P_AND_R_VALUES: u8 = 0x05;
+const PLL_J_VALUE: u8 = 0x06;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
@@ -88,23 +91,25 @@ impl Page0 {
         Ok(())
     }
 
-    pub(crate) fn pll_j_value<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<(), <I2C as ErrorType>::Error> {
-        // TODO
-        Ok(())
-    }
-
-    pub(crate) fn pll_p_and_r_values<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, pll_divider: u8, pll_multiplier: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        if pll_divider < MIN_PLL_DIV || pll_divider > MAX_PLL_DIV {
+    pub(crate) fn pll_j_value<I2C: I2c>(&mut self, i2c: &mut I2C, j: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if j < MIN_PLL_J || j > MAX_PLL_J {
             return Err(TLV320DAC3100Error::InvalidArgument)
         }
-        if pll_multiplier < MIN_PLL_MUL || pll_multiplier > MAX_PLL_MUL {
+        self.write_register(i2c, PLL_J_VALUE, j).map_err(TLV320DAC3100Error::I2C)
+    }
+
+    pub(crate) fn pll_p_and_r_values<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, p: u8, r: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if p < MIN_PLL_P || p > MAX_PLL_P {
+            return Err(TLV320DAC3100Error::InvalidArgument)
+        }
+        if r < MIN_PLL_R || r > MAX_PLL_R {
             return Err(TLV320DAC3100Error::InvalidArgument)
         }
 
         let mut reg_val = (if powered { 0x1 } else { 0x0 }) << 3;
-        reg_val |= pll_divider;
+        reg_val |= p;
         reg_val <<= 4;
-        reg_val |= pll_multiplier;
+        reg_val |= r;
 
         self.write_register(i2c, PLL_P_AND_R_VALUES, reg_val).map_err(TLV320DAC3100Error::I2C)
     }
@@ -236,6 +241,52 @@ mod tests {
     }
 
     #[test]
+    fn pll_j_value_i2c_err() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [PLL_J_VALUE, 0x1].to_vec()).with_error(ErrorKind::Other),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        let err = page.pll_j_value(&mut i2c, 1).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
+        i2c.done();
+    }
+
+    #[test]
+    fn pll_j_value_invalid_j_err() {
+        let mut i2c = I2cMock::new(&[]);
+        let mut page = Page0 {};
+        let err = page.pll_j_value(&mut i2c, 0).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::InvalidArgument);
+        i2c.done();
+    }
+
+    #[test]
+    fn pll_j_value_floor_ok() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [PLL_J_VALUE, 0x1].to_vec()),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        page.pll_j_value(&mut i2c, 1).unwrap();
+        i2c.done();
+    }
+
+    #[test]
+    fn pll_j_value_ceiling_ok() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [PLL_J_VALUE, 0x3f].to_vec()),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        page.pll_j_value(&mut i2c, 63).unwrap();
+        i2c.done();
+    }
+
+    #[test]
     fn pll_p_and_r_values_invalid_pll_div_err() {
         let mut i2c = I2cMock::new(&[]);
         let mut page = Page0 {};
@@ -272,7 +323,7 @@ mod tests {
         ];
         let mut i2c = I2cMock::new(&expectations);
         let mut page = Page0 {};
-        let res = page.pll_p_and_r_values(&mut i2c, false, 2, 4).unwrap();
+        page.pll_p_and_r_values(&mut i2c, false, 2, 4).unwrap();
         i2c.done();
     }
 
