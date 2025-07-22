@@ -14,6 +14,8 @@ const MAX_PLL_J: u8 = 0x3f;
 const MIN_PLL_J: u8 = 0x1;
 const MAX_DAC_NDAC_DIVIDER: u8 = 0x80;
 const MIN_DAC_NDAC_DIVIDER: u8 = 0x1;
+const MAX_DAC_VOLUME_CONTROL_DB: f32 = 24.0;
+const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 
 // registers
 const SOFTWARE_RESET: u8 = 0x01;
@@ -27,6 +29,7 @@ const DAC_NDAC_VAL: u8 = 0x0b;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
+// TODO should this support Channel::Both?
 #[derive(PartialEq)]
 pub(crate) enum Channel {
     Left,
@@ -96,18 +99,14 @@ impl Page0 {
         self.read_register(i2c, DAC_RIGHT_VOLUME_CONTROL)
     }
 
-    // TODO split this up and eliminate Channel enum
+    // TODO split this up and eliminate Channel enum?
     pub(crate) fn set_dac_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C, channel: Channel, db: f32) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        // TODO return Err instead of constrain
-        let db_constrained: f32 = if db > 24.0 {
-            24.0
-        } else if db < -63.5 {
-            -63.5
-        } else { db };
+        if db < MIN_DAC_VOLUME_CONTROL_DB || db > MAX_DAC_VOLUME_CONTROL_DB {
+            return Err(TLV320DAC3100Error::InvalidArgument)
+        }
 
-        let reg_val = (db_constrained * 2.0) as i8;
+        let reg_val = (db * 2.0) as i8;
 
-        // TODO should this support Channel::Both?
         let register = if channel == Channel::Left {
             DAC_LEFT_VOLUME_CONTROL
         } else {
@@ -294,14 +293,11 @@ mod tests {
     }
 
     #[test]
-    fn dac_volume_control_db_min_constrained_ok() {
-        let expectations = [
-            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
-            I2cTransaction::write(ADDRESS, [DAC_RIGHT_VOLUME_CONTROL, 0b1000_0001].to_vec()),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
+    fn dac_volume_control_db_min_invalid_arg_err() {
+        let mut i2c = I2cMock::new(&[]);
         let mut page = Page0 {};
-        page.set_dac_volume_control(&mut i2c, Channel::Right, -64.0).unwrap();
+        let err = page.set_dac_volume_control(&mut i2c, Channel::Right, -64.0).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::InvalidArgument);
         i2c.done();
     }
 
@@ -317,14 +313,11 @@ mod tests {
         i2c.done();
     }
     #[test]
-    fn dac_volume_control_db_max_constrained_ok() {
-        let expectations = [
-            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
-            I2cTransaction::write(ADDRESS, [DAC_LEFT_VOLUME_CONTROL, 0b0011_0000].to_vec()),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
+    fn dac_volume_control_db_max_invalid_arg_err() {
+        let mut i2c = I2cMock::new(&[]);
         let mut page = Page0 {};
-        page.set_dac_volume_control(&mut i2c, Channel::Left, 24.5).unwrap();
+        let err = page.set_dac_volume_control(&mut i2c, Channel::Right, 24.5).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::InvalidArgument);
         i2c.done();
     }
 
