@@ -22,6 +22,7 @@ const CLOCK_GEN_MUXING: u8 = 0x04;
 const PLL_P_AND_R_VALUES: u8 = 0x05;
 const PLL_J_VALUE: u8 = 0x06;
 const PLL_D_VALUE_MSB: u8 = 0x07;
+const PLL_D_VALUE_LSB: u8 = 0x08;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
@@ -92,9 +93,8 @@ impl Page0 {
         self.write_register(i2c, PLL_D_VALUE_MSB, d).map_err(TLV320DAC3100Error::I2C)
     }
 
-    pub(crate) fn pll_d_value_lsb<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        // TODO
-        Ok(())
+    pub(crate) fn pll_d_value_lsb<I2C: I2c>(&mut self, i2c: &mut I2C, d: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        self.write_register(i2c, PLL_D_VALUE_LSB, d).map_err(TLV320DAC3100Error::I2C)
     }
 
     pub(crate) fn pll_j_value<I2C: I2c>(&mut self, i2c: &mut I2C, j: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -247,6 +247,31 @@ mod tests {
     }
 
     #[test]
+    fn pll_d_value_lsb_i2c_err() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [PLL_D_VALUE_LSB, 0x1].to_vec()).with_error(ErrorKind::Other),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        let err = page.pll_d_value_lsb(&mut i2c, 1).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
+        i2c.done();
+    }
+
+    #[test]
+    fn pll_d_value_lsb_ok() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [PLL_D_VALUE_LSB, 0x5].to_vec()),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        page.pll_d_value_lsb(&mut i2c, 5).unwrap();
+        i2c.done();
+    }
+
+    #[test]
     fn pll_d_value_msb_i2c_err() {
         let expectations = [
             I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
@@ -258,6 +283,7 @@ mod tests {
         assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
         i2c.done();
     }
+
     #[test]
     fn pll_d_value_msb_invalid_arg_err() {
         let mut i2c = I2cMock::new(&[]);
@@ -266,6 +292,7 @@ mod tests {
         assert_eq!(err, TLV320DAC3100Error::InvalidArgument);
         i2c.done();
     }
+
     #[test]
     fn pll_d_value_msb_max_ok() {
         let expectations = [
@@ -277,6 +304,7 @@ mod tests {
         page.pll_d_value_msb(&mut i2c, 0x3f).unwrap();
         i2c.done();
     }
+
     #[test]
     fn pll_d_value_msb_min_ok() {
         let expectations = [
