@@ -14,6 +14,8 @@ const MAX_PLL_R: u8 = 0x10;
 const MIN_PLL_R: u8 = 0x1;
 const MAX_PLL_J: u8 = 0x3f;
 const MIN_PLL_J: u8 = 0x1;
+const MAX_DAC_NDAC_DIVIDER: u8 = 0x80;
+const MIN_DAC_NDAC_DIVIDER: u8 = 0x1;
 
 // registers
 const SOFTWARE_RESET: u8 = 0x01;
@@ -23,6 +25,7 @@ const PLL_P_AND_R_VALUES: u8 = 0x05;
 const PLL_J_VALUE: u8 = 0x06;
 const PLL_D_VALUE_MSB: u8 = 0x07;
 const PLL_D_VALUE_LSB: u8 = 0x08;
+const DAC_NDAC_VAL: u8 = 0x0b;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
@@ -64,7 +67,19 @@ impl Page0 {
         self.write_register(i2c, CLOCK_GEN_MUXING, reg_value)
     }
 
+    pub(crate) fn dac_ndac_val<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, divider: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if divider < MIN_DAC_NDAC_DIVIDER || divider > MAX_DAC_NDAC_DIVIDER {
+            return Err(TLV320DAC3100Error::InvalidArgument)
+        }
+        let mut reg_val: u8 = (if powered { 0x1 } else { 0x0 }) << 7;
+        if divider < 128 {
+            reg_val |= divider;
+        }
+        self.write_register(i2c, DAC_NDAC_VAL, reg_val).map_err(TLV320DAC3100Error::I2C)
+    }
+
     pub(crate) fn dac_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C, channel: Channel, db: f32) -> Result<(), <I2C as ErrorType>::Error> {
+        // TODO constrain or return Err?
         let db_constrained: f32 = if db > 24.0 {
             24.0
         } else if db < -63.5 {
@@ -157,6 +172,60 @@ mod tests {
         let mut i2c = I2cMock::new(&expectations);
         let mut page = Page0 {};
         page.clock_gen_muxing(&mut i2c, PllClockIn::Gpio1, CodecClkIn::Gpio1).unwrap();
+        i2c.done();
+    }
+
+    #[test]
+    fn dac_ndac_val_i2c_err() {
+        let mut i2c = I2cMock::new(&[
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [DAC_NDAC_VAL, 0b1000_0001].to_vec()).with_error(ErrorKind::Other),
+        ]);
+        let mut page = Page0 {};
+        let err = page.dac_ndac_val(&mut i2c, true, 1).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
+        i2c.done();
+    }
+
+    #[test]
+    fn dac_ndac_val_invalid_arg_min_err() {
+        let mut i2c = I2cMock::new(&[]);
+        let mut page = Page0 {};
+        let err = page.dac_ndac_val(&mut i2c, false, 0).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::InvalidArgument);
+        i2c.done();
+    }
+
+    #[test]
+    fn dac_ndac_val_invalid_arg_max_err() {
+        let mut i2c = I2cMock::new(&[]);
+        let mut page = Page0 {};
+        let err = page.dac_ndac_val(&mut i2c, false, 129).unwrap_err();
+        assert_eq!(err, TLV320DAC3100Error::InvalidArgument);
+        i2c.done();
+    }
+
+    #[test]
+    fn dac_ndac_val_min_ok() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [DAC_NDAC_VAL, 0b1000_0001].to_vec()),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        page.dac_ndac_val(&mut i2c, true, 1).unwrap();
+        i2c.done();
+    }
+
+    #[test]
+    fn dac_ndac_val_max_ok() {
+        let expectations = [
+            I2cTransaction::write(ADDRESS, [PAGE_CONTROL_REGISTER, 0x0].to_vec()),
+            I2cTransaction::write(ADDRESS, [DAC_NDAC_VAL, 0x0].to_vec()),
+        ];
+        let mut i2c = I2cMock::new(&expectations);
+        let mut page = Page0 {};
+        page.dac_ndac_val(&mut i2c, false, 128).unwrap();
         i2c.done();
     }
 
