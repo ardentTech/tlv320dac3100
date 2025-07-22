@@ -7,7 +7,7 @@ mod page;
 use embedded_hal as hal;
 use hal::i2c::{ErrorType, I2c};
 use crate::page0::Page0;
-
+use crate::page::TLV320DAC3100Error;
 // TODO custom driver errors
 
 pub struct TLV320DAC3100<I2C, D> {
@@ -21,18 +21,16 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         TLV320DAC3100 { delay, i2c, page0: Page0 {} }
     }
 
-    pub fn over_temperature(&mut self) -> Result<bool, <I2C as ErrorType>::Error> {
+    pub fn over_temperature(&mut self) -> Result<bool, TLV320DAC3100Error<I2C::Error>> {
         let reg = self.page0.ot_flag(&mut self.i2c)?;
         Ok(!(reg == 0x1))
     }
 
-    pub fn reset(&mut self) -> Result<(), <I2C as ErrorType>::Error> {
+    pub fn reset(&mut self) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         self.page0.software_reset(&mut self.i2c, &mut self.delay)
     }
 
-    pub fn set_dac_volume(&mut self) {
-
-    }
+    pub fn set_dac_volume(&mut self) {}
 }
 
 #[cfg(test)]

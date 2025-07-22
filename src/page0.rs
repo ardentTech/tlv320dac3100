@@ -62,7 +62,7 @@ impl Page0 {
         i2c: &mut I2C,
         pll_clock_in: PllClockIn,
         codec_clk_in: CodecClkIn
-    ) -> Result<(), <I2C as ErrorType>::Error> {
+    ) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         let reg_value = ((pll_clock_in as u8) << 2) | codec_clk_in as u8;
         self.write_register(i2c, CLOCK_GEN_MUXING, reg_value)
     }
@@ -75,10 +75,10 @@ impl Page0 {
         if divider < 128 {
             reg_val |= divider;
         }
-        self.write_register(i2c, DAC_NDAC_VAL, reg_val).map_err(TLV320DAC3100Error::I2C)
+        self.write_register(i2c, DAC_NDAC_VAL, reg_val)
     }
 
-    pub(crate) fn dac_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C, channel: Channel, db: f32) -> Result<(), <I2C as ErrorType>::Error> {
+    pub(crate) fn dac_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C, channel: Channel, db: f32) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         // TODO constrain or return Err?
         let db_constrained: f32 = if db > 24.0 {
             24.0
@@ -97,7 +97,7 @@ impl Page0 {
         self.write_register(i2c, register, reg_val as u8)
     }
 
-    pub(crate) fn ot_flag<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, <I2C as ErrorType>::Error> {
+    pub(crate) fn ot_flag<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
         Ok(self.read_register(i2c, OT_FLAG)? >> 1)
     }
 
@@ -105,18 +105,18 @@ impl Page0 {
         if d > MAX_PLL_D_MSB {
             return Err(TLV320DAC3100Error::InvalidArgument)
         }
-        self.write_register(i2c, PLL_D_VALUE_MSB, d).map_err(TLV320DAC3100Error::I2C)
+        self.write_register(i2c, PLL_D_VALUE_MSB, d)
     }
 
     pub(crate) fn pll_d_value_lsb<I2C: I2c>(&mut self, i2c: &mut I2C, d: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        self.write_register(i2c, PLL_D_VALUE_LSB, d).map_err(TLV320DAC3100Error::I2C)
+        self.write_register(i2c, PLL_D_VALUE_LSB, d)
     }
 
     pub(crate) fn pll_j_value<I2C: I2c>(&mut self, i2c: &mut I2C, j: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         if j < MIN_PLL_J || j > MAX_PLL_J {
             return Err(TLV320DAC3100Error::InvalidArgument)
         }
-        self.write_register(i2c, PLL_J_VALUE, j).map_err(TLV320DAC3100Error::I2C)
+        self.write_register(i2c, PLL_J_VALUE, j)
     }
 
     pub(crate) fn pll_p_and_r_values<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, p: u8, r: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -132,10 +132,10 @@ impl Page0 {
         reg_val <<= 4;
         reg_val |= r;
 
-        self.write_register(i2c, PLL_P_AND_R_VALUES, reg_val).map_err(TLV320DAC3100Error::I2C)
+        self.write_register(i2c, PLL_P_AND_R_VALUES, reg_val)
     }
 
-    pub(crate) fn software_reset<I2C: I2c, D: hal::delay::DelayNs>(&mut self, i2c: &mut I2C, mut delay: D) -> Result<(), <I2C as ErrorType>::Error> {
+    pub(crate) fn software_reset<I2C: I2c, D: hal::delay::DelayNs>(&mut self, i2c: &mut I2C, mut delay: D) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         self.write_register(i2c, SOFTWARE_RESET, 0x1)?;
         delay.delay_ns(10);
         Ok(())
@@ -159,7 +159,7 @@ mod tests {
         let mut i2c = I2cMock::new(&expectations);
         let mut page = Page0 {};
         let err = page.clock_gen_muxing(&mut i2c, PllClockIn::Gpio1, CodecClkIn::Gpio1).unwrap_err();
-        assert_eq!(err, ErrorKind::Other);
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
         i2c.done();
     }
 
@@ -238,7 +238,7 @@ mod tests {
         let mut i2c = I2cMock::new(&expectations);
         let mut page = Page0 {};
         let err = page.dac_volume_control(&mut i2c, Channel::Left, -63.5).unwrap_err();
-        assert_eq!(err, ErrorKind::Other);
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
         i2c.done();
     }
 
@@ -298,7 +298,7 @@ mod tests {
         let mut i2c = I2cMock::new(&expectations);
         let mut page = Page0 {};
         let err = page.ot_flag(&mut i2c).unwrap_err();
-        assert_eq!(err, ErrorKind::Other);
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
         i2c.done();
     }
 
@@ -482,7 +482,7 @@ mod tests {
         let mut i2c = I2cMock::new(&expectations);
         let mut page = Page0 {};
         let err = page.software_reset(&mut i2c, NoopDelay).unwrap_err();
-        assert_eq!(err, ErrorKind::Other);
+        assert_eq!(err, TLV320DAC3100Error::I2C(ErrorKind::Other));
         i2c.done();
     }
 
