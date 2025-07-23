@@ -12,11 +12,14 @@ const MAX_PLL_R: u8 = 0x10;
 const MIN_PLL_R: u8 = 0x1;
 const MAX_PLL_J: u8 = 0x3f;
 const MIN_PLL_J: u8 = 0x1;
+const MAX_DAC_MDAC_DIVIDER: u8 = 0x80;
+const MIN_DAC_MDAC_DIVIDER: u8 = 0x1;
 const MAX_DAC_NDAC_DIVIDER: u8 = 0x80;
 const MIN_DAC_NDAC_DIVIDER: u8 = 0x1;
 const MAX_DAC_VOLUME_CONTROL_DB: f32 = 24.0;
 const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 
+// TODO if registers are pub(crate) then reads can happen in the higher-level API
 // registers
 const SOFTWARE_RESET: u8 = 0x01;
 const OT_FLAG: u8 = 0x03;
@@ -26,6 +29,48 @@ const PLL_J_VALUE: u8 = 0x06;
 const PLL_D_VALUE_MSB: u8 = 0x07;
 const PLL_D_VALUE_LSB: u8 = 0x08;
 const DAC_NDAC_VAL: u8 = 0x0b;
+const DAC_MDAC_VAL: u8 = 0x0c;
+const DAC_DOSR_VAL_MSB: u8 = 0x0d;
+const DAC_DOSR_VAL_LSB: u8 = 0x0e;
+// BEGIN TODO
+const CLKOUT_MUX: u8 = 0x19;
+const CLKOUT_M_VAL: u8 = 0x1a;
+const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
+const DATA_SLOT_OFFSET_PROGRAMMABILITY: u8 = 0x1c;
+const CODEC_INTERFACE_CONTROL_2: u8 = 0x1d;
+const BCLK_N_VAL: u8 = 0x1e;
+const CODEC_SECONDARY_INTERFACE_CONTROL_1: u8 = 0x1f;
+const CODEC_SECONDARY_INTERFACE_CONTROL_2: u8 = 0x20;
+const CODEC_SECONDARY_INTERFACE_CONTROL_3: u8 = 0x21;
+const I2C_BUS_CONDITION: u8 = 0x22;
+const DAC_FLAG_REGISTER_1: u8 = 0x25;
+const DAC_FLAG_REGISTER_2: u8 = 0x26;
+const OVERFLOW_FLAGS: u8 = 0x27;
+const DAC_INTERRUPT_FLAGS_STICKY_BITS: u8 = 0x2c;
+const INTERRUPT_FLAGS_DAC: u8 = 0x2e;
+const INT1_CONTROL_REGISTER: u8 = 0x30;
+const INT2_CONTROL_REGISTER: u8 = 0x31;
+const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33;
+const DIN_CONTROL: u8 = 0x36;
+const DAC_PROCESSING_BLOCK_SELECTION: u8 = 0x3c;
+const DAC_DATA_PATH_SETUP: u8 = 0x3f;
+const DAC_VOLUME_CONTROL: u8 = 0x40;
+const HEADSET_DETECTION: u8 = 0x43;
+const DRC_CONTROL_1: u8 = 0x44;
+const DRC_CONTROL_2: u8 = 0x45;
+const DRC_CONTROL_3: u8 = 0x46;
+const LEFT_BEEP_GENERATOR: u8 = 0x47;
+const RIGHT_BEEP_GENERATOR: u8 = 0x48;
+const BEEP_LENGTH_MSB: u8 = 0x49;
+const BEEP_LENGTH_MIDDLE_BITS: u8 = 0x4a;
+const BEEP_LENGTH_LSB: u8 = 0x4b;
+const BEEP_SINX_MSB: u8 = 0x4c;
+const BEEP_SINX_LSB: u8 = 0x4d;
+const BEEP_COSX_MSB: u8 = 0x4e;
+const BEEP_COSX_LSB: u8 = 0x4f;
+const VOL_MICDET_PIN_SAR_ADC_VOLUME_CONTROL: u8 = 0x74;
+const VOL_MICDET_PIN_GAIN: u8 = 0x75;
+// END TODO
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
@@ -58,11 +103,6 @@ impl Page for Page0 {
 
 impl Page0 {
 
-    // TODO unit test
-    pub(crate) fn clock_gen_muxing<I2C: I2c>(&mut self, i2c: &mut I2C,) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, CLOCK_GEN_MUXING)
-    }
-
     pub(crate) fn set_clock_gen_muxing<I2C: I2c>(
         &mut self,
         i2c: &mut I2C,
@@ -73,9 +113,30 @@ impl Page0 {
         self.write_register(i2c, CLOCK_GEN_MUXING, reg_value)
     }
 
+    // TODO return a u16 of DOSR MSB+LSB? higher-level API?
+
     // TODO unit test
-    pub(crate) fn dac_ndac_val<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, DAC_NDAC_VAL)
+    pub(crate) fn set_dac_dosr_val_lsb<I2C: I2c>(&mut self, i2c: &mut I2C, dosr: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if dosr > 254 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        self.write_register(i2c, DAC_DOSR_VAL_LSB, dosr)
+    }
+
+    // TODO unit test
+    pub(crate) fn set_dac_dosr_val_msb<I2C: I2c>(&mut self, i2c: &mut I2C, dosr: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if dosr > 3 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        self.write_register(i2c, DAC_DOSR_VAL_MSB, dosr)
+    }
+
+    // TODO unit test
+    pub(crate) fn set_dac_mdac_val<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, divider: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if divider < MIN_DAC_MDAC_DIVIDER || divider > MAX_DAC_MDAC_DIVIDER {
+            return Err(TLV320DAC3100Error::InvalidArgument)
+        }
+        let mut reg_val: u8 = (if powered { 0x1 } else { 0x0 }) << 7;
+        if divider < 128 {
+            reg_val |= divider;
+        }
+        self.write_register(i2c, DAC_NDAC_VAL, reg_val)
     }
 
     pub(crate) fn set_dac_ndac_val<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, divider: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -87,16 +148,6 @@ impl Page0 {
             reg_val |= divider;
         }
         self.write_register(i2c, DAC_NDAC_VAL, reg_val)
-    }
-
-    // TODO unit test
-    pub(crate) fn dac_left_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, DAC_LEFT_VOLUME_CONTROL)
-    }
-
-    // TODO unit test
-    pub(crate) fn dac_right_volume_control<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, DAC_RIGHT_VOLUME_CONTROL)
     }
 
     // TODO split this up and eliminate Channel enum?
@@ -119,11 +170,6 @@ impl Page0 {
         Ok(self.read_register(i2c, OT_FLAG)? >> 1)
     }
 
-    // TODO unit test
-    pub(crate) fn pll_d_value_msb<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, PLL_D_VALUE_MSB)
-    }
-
     pub(crate) fn set_pll_d_value_msb<I2C: I2c>(&mut self, i2c: &mut I2C, d: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         if d > MAX_PLL_D_MSB {
             return Err(TLV320DAC3100Error::InvalidArgument)
@@ -131,18 +177,8 @@ impl Page0 {
         self.write_register(i2c, PLL_D_VALUE_MSB, d)
     }
 
-    // TODO unit test
-    pub(crate) fn pll_d_value_lsb<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, PLL_D_VALUE_LSB)
-    }
-
     pub(crate) fn set_pll_d_value_lsb<I2C: I2c>(&mut self, i2c: &mut I2C, d: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         self.write_register(i2c, PLL_D_VALUE_LSB, d)
-    }
-
-    // TODO unit test
-    pub(crate) fn pll_j_value<I2C: I2c>(&mut self, i2c: &mut I2C, j: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, PLL_J_VALUE)
     }
 
     pub(crate) fn set_pll_j_value<I2C: I2c>(&mut self, i2c: &mut I2C, j: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -150,11 +186,6 @@ impl Page0 {
             return Err(TLV320DAC3100Error::InvalidArgument)
         }
         self.write_register(i2c, PLL_J_VALUE, j)
-    }
-
-    // TODO unit test
-    pub(crate) fn pll_p_and_r_values<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_register(i2c, PLL_P_AND_R_VALUES)
     }
 
     pub(crate) fn set_pll_p_and_r_values<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, p: u8, r: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -179,6 +210,8 @@ impl Page0 {
         Ok(())
     }
 }
+
+// TODO are these technically integration tests that belong in the `tests` dir?
 
 #[cfg(test)]
 mod tests {

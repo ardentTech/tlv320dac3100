@@ -1,8 +1,8 @@
 #![no_std]
 extern crate alloc;
 
-mod page0;
 mod page;
+mod page0;
 
 use embedded_hal as hal;
 use hal::i2c::{ErrorType, I2c};
