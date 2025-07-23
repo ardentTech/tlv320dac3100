@@ -1,8 +1,11 @@
+mod registers;
+
 use core::cmp::PartialEq;
 use embedded_hal as hal;
 use embedded_hal::i2c::Error;
 use hal::i2c::{ErrorType, I2c};
 use crate::error::TLV320DAC3100Error;
+use crate::page0::registers::*;
 use crate::page::Page;
 
 const PAGE_ID: u8 = 0x0;
@@ -19,61 +22,6 @@ const MAX_DAC_NDAC_DIVIDER: u8 = 0x80;
 const MIN_DAC_NDAC_DIVIDER: u8 = 0x1;
 const MAX_DAC_VOLUME_CONTROL_DB: f32 = 24.0;
 const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
-
-// TODO if registers are pub(crate) then reads can happen in the higher-level API
-// registers
-const SOFTWARE_RESET: u8 = 0x01;
-const OT_FLAG: u8 = 0x03;
-const CLOCK_GEN_MUXING: u8 = 0x04;
-const PLL_P_AND_R_VALUES: u8 = 0x05;
-const PLL_J_VALUE: u8 = 0x06;
-const PLL_D_VALUE_MSB: u8 = 0x07;
-const PLL_D_VALUE_LSB: u8 = 0x08;
-const DAC_NDAC_VAL: u8 = 0x0b;
-const DAC_MDAC_VAL: u8 = 0x0c;
-const DAC_DOSR_VAL_MSB: u8 = 0x0d;
-const DAC_DOSR_VAL_LSB: u8 = 0x0e;
-// BEGIN TODO
-const CLKOUT_MUX: u8 = 0x19;
-const CLKOUT_M_VAL: u8 = 0x1a;
-const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
-const DATA_SLOT_OFFSET_PROGRAMMABILITY: u8 = 0x1c;
-const CODEC_INTERFACE_CONTROL_2: u8 = 0x1d;
-const BCLK_N_VAL: u8 = 0x1e;
-const CODEC_SECONDARY_INTERFACE_CONTROL_1: u8 = 0x1f;
-const CODEC_SECONDARY_INTERFACE_CONTROL_2: u8 = 0x20;
-const CODEC_SECONDARY_INTERFACE_CONTROL_3: u8 = 0x21;
-const I2C_BUS_CONDITION: u8 = 0x22;
-const DAC_FLAG_REGISTER_1: u8 = 0x25;
-const DAC_FLAG_REGISTER_2: u8 = 0x26;
-const OVERFLOW_FLAGS: u8 = 0x27;
-const DAC_INTERRUPT_FLAGS_STICKY_BITS: u8 = 0x2c;
-const INTERRUPT_FLAGS_DAC: u8 = 0x2e;
-const INT1_CONTROL_REGISTER: u8 = 0x30;
-const INT2_CONTROL_REGISTER: u8 = 0x31;
-const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33;
-const DIN_CONTROL: u8 = 0x36;
-const DAC_PROCESSING_BLOCK_SELECTION: u8 = 0x3c;
-const DAC_DATA_PATH_SETUP: u8 = 0x3f;
-const DAC_VOLUME_CONTROL: u8 = 0x40;
-const HEADSET_DETECTION: u8 = 0x43;
-const DRC_CONTROL_1: u8 = 0x44;
-const DRC_CONTROL_2: u8 = 0x45;
-const DRC_CONTROL_3: u8 = 0x46;
-const LEFT_BEEP_GENERATOR: u8 = 0x47;
-const RIGHT_BEEP_GENERATOR: u8 = 0x48;
-const BEEP_LENGTH_MSB: u8 = 0x49;
-const BEEP_LENGTH_MIDDLE_BITS: u8 = 0x4a;
-const BEEP_LENGTH_LSB: u8 = 0x4b;
-const BEEP_SINX_MSB: u8 = 0x4c;
-const BEEP_SINX_LSB: u8 = 0x4d;
-const BEEP_COSX_MSB: u8 = 0x4e;
-const BEEP_COSX_LSB: u8 = 0x4f;
-const VOL_MICDET_PIN_SAR_ADC_VOLUME_CONTROL: u8 = 0x74;
-const VOL_MICDET_PIN_GAIN: u8 = 0x75;
-// END TODO
-const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
-const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 
 // TODO should this support Channel::Both?
 #[derive(PartialEq)]
@@ -158,7 +106,6 @@ impl Page0 {
         }
 
         let reg_val = (db * 2.0) as i8;
-
         let register = if channel == Channel::Left {
             DAC_LEFT_VOLUME_CONTROL
         } else {
