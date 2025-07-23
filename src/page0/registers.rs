@@ -1,4 +1,5 @@
 // TODO if registers are pub(crate) then reads can happen in the higher-level API
+// TODO is there a way to declare the visibility once instead of per-register?
 // registers
 pub(crate) const SOFTWARE_RESET: u8 = 0x01;
 pub(crate) const OT_FLAG: u8 = 0x03;
@@ -11,10 +12,10 @@ pub(crate) const DAC_NDAC_VAL: u8 = 0x0b;
 pub(crate) const DAC_MDAC_VAL: u8 = 0x0c;
 pub(crate) const DAC_DOSR_VAL_MSB: u8 = 0x0d;
 pub(crate) const DAC_DOSR_VAL_LSB: u8 = 0x0e;
-// pub(crate) const CLKOUT_MUX: u8 = 0x19;
-// pub(crate) const CLKOUT_M_VAL: u8 = 0x1a;
-// pub(crate) const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
-// pub(crate) const DATA_SLOT_OFFSET_PROGRAMMABILITY: u8 = 0x1c;
+pub(crate) const CLKOUT_MUX: u8 = 0x19;
+pub(crate) const CLKOUT_M_VAL: u8 = 0x1a;
+pub(crate) const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
+pub(crate) const DATA_SLOT_OFFSET_PROGRAMMABILITY: u8 = 0x1c;
 // pub(crate) const CODEC_INTERFACE_CONTROL_2: u8 = 0x1d;
 // pub(crate) const BCLK_N_VAL: u8 = 0x1e;
 // pub(crate) const CODEC_SECONDARY_INTERFACE_CONTROL_1: u8 = 0x1f;

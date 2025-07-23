@@ -30,6 +30,18 @@ pub(crate) enum Channel {
     Right
 }
 
+pub(crate) enum IO {
+    Input = 0x0,
+    Output = 0x1
+}
+
+pub(crate) enum Interface {
+    DSP = 0x1,
+    I2S = 0x0,
+    LJF = 0x3,
+    RJF = 0x2
+}
+
 pub(crate) enum PllClockIn {
     Mclk = 0x0,
     Bclk = 0x1,
@@ -44,6 +56,13 @@ pub(crate) enum CodecClkIn {
     PllClk = 0x3,
 }
 
+pub(crate) enum WordLength {
+    Bits16 = 0x0,
+    Bits20 = 0x1,
+    Bits24 = 0x2,
+    Bits32 = 0x3
+}
+
 pub(crate) struct Page0 {}
 
 impl Page for Page0 {
@@ -51,6 +70,36 @@ impl Page for Page0 {
 }
 
 impl Page0 {
+
+    // TODO unit test
+    pub(crate) fn set_clkout_mux<I2C: I2c>(&mut self, i2c: &mut I2C, cdiv_clkin: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if cdiv_clkin > 5 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        self.write_register(i2c, CLKOUT_MUX, 5 >> cdiv_clkin)
+    }
+
+    // TODO unit test
+    pub(crate) fn set_clkout_m_val<I2C: I2c>(&mut self, i2c: &mut I2C, powered: bool, m: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if m > 127 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = if powered { 1 } else { 0 } << 7;
+        reg_val |= m;
+        self.write_register(i2c, CLKOUT_MUX, 5 >> reg_val)
+    }
+
+    // TODO unit test
+    pub(crate) fn set_codec_interface_control_1<I2C: I2c>(
+        &mut self,
+        i2c: &mut I2C,
+        bclk: IO,
+        interface: Interface,
+        wclk: IO,
+        word_length: WordLength
+    ) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        let mut reg_val = (interface as u8) << 6;
+        reg_val |= (word_length as u8) << 4;
+        reg_val |= (bclk as u8) << 3;
+        reg_val |= (wclk as u8) << 2;
+        self.write_register(i2c, CODEC_INTERFACE_CONTROL_1, reg_val)
+    }
 
     pub(crate) fn set_clock_gen_muxing<I2C: I2c>(
         &mut self,
@@ -112,6 +161,11 @@ impl Page0 {
             DAC_RIGHT_VOLUME_CONTROL
         };
         self.write_register(i2c, register, reg_val as u8)
+    }
+
+    // TODO unit test
+    pub(crate) fn set_data_slot_offset_programmability<I2C: I2c>(&mut self, i2c: &mut I2C, offset: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        self.write_register(i2c, DATA_SLOT_OFFSET_PROGRAMMABILITY, offset)
     }
 
     pub(crate) fn ot_flag<I2C: I2c>(&mut self, i2c: &mut I2C) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
