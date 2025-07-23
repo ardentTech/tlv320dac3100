@@ -2,7 +2,8 @@ use core::cmp::PartialEq;
 use embedded_hal as hal;
 use embedded_hal::i2c::Error;
 use hal::i2c::{ErrorType, I2c};
-use crate::page::{Page, TLV320DAC3100Error};
+use crate::error::TLV320DAC3100Error;
+use crate::page::Page;
 
 const PAGE_ID: u8 = 0x0;
 const MAX_PLL_D_MSB: u8 = 0x3f;

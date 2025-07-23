@@ -1,13 +1,8 @@
 use embedded_hal::i2c::{ErrorType, I2c};
+use crate::error::TLV320DAC3100Error;
 
 pub const ADDRESS: u8 = 0x18;
 pub const PAGE_CONTROL_REGISTER: u8 = 0x00;
-
-#[derive(Debug, PartialEq)]
-pub enum TLV320DAC3100Error<E> {
-    I2C(E),
-    InvalidArgument
-}
 
 pub trait Page {
     fn get_id() -> u8;
