@@ -24,12 +24,16 @@ const MAX_DAC_VOLUME_CONTROL_DB: f32 = 24.0;
 const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 
 // TODO should this support Channel::Both?
+// TODO standardize usage of "powered"
+// TODO utilize (bool as u8)
 #[derive(PartialEq)]
 pub(crate) enum Channel {
     Left,
     Right
 }
 
+
+// TODO compare compiled bin size of hex vs int
 pub(crate) enum IO {
     Input = 0x0,
     Output = 0x1
@@ -63,6 +67,11 @@ pub(crate) enum WordLength {
     Bits32 = 0x3
 }
 
+pub(crate) enum BclkSrc {
+    DaclClk = 0x0,
+    DacModClk = 0x1
+}
+
 pub(crate) struct Page0 {}
 
 impl Page for Page0 {
@@ -70,6 +79,19 @@ impl Page for Page0 {
 }
 
 impl Page0 {
+
+    // TODO unit test
+    pub(crate) fn set_bclk_n_val<I2C: I2c>(
+        &mut self,
+        i2c: &mut I2C,
+        powered_up: bool,
+        divider_n: u8
+    ) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        if divider_n > 127 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = (powered_up as u8) << 7;
+        reg_val |= divider_n;
+        self.write_register(i2c, BCLK_N_VAL, reg_val)
+    }
 
     // TODO unit test
     pub(crate) fn set_clkout_mux<I2C: I2c>(&mut self, i2c: &mut I2C, cdiv_clkin: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -99,6 +121,21 @@ impl Page0 {
         reg_val |= (bclk as u8) << 3;
         reg_val |= (wclk as u8) << 2;
         self.write_register(i2c, CODEC_INTERFACE_CONTROL_1, reg_val)
+    }
+
+    // TODO unit test
+    pub(crate) fn set_codec_interface_control_2<I2C: I2c>(
+        &mut self,
+        i2c: &mut I2C,
+        bclk_inverted: bool,
+        active_when_powered_down: bool,
+        bclk_src: BclkSrc
+
+    ) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        let mut reg_val = (bclk_inverted as u8) << 3;
+        reg_val |= (active_when_powered_down as u8) << 2;
+        reg_val |= bclk_src as u8;
+        self.write_register(i2c, CODEC_INTERFACE_CONTROL_2, reg_val)
     }
 
     pub(crate) fn set_clock_gen_muxing<I2C: I2c>(
