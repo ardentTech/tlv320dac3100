@@ -1,5 +1,6 @@
 use embedded_hal as hal;
 use hal::i2c::I2c;
+use crate::driver::VolumeControlHysteresis::HysteresisNone;
 use crate::error::TLV320DAC3100Error;
 
 const I2C_DEVICE_ADDRESS: u8 = 0x18;
@@ -16,19 +17,68 @@ const PLL_J_VALUE: u8 = 0x06;
 const PLL_D_VALUE_MSB: u8 = 0x07;
 const PLL_D_VALUE_LSB: u8 = 0x08;
 const DAC_NDAC_VAL: u8 = 0x0b;
+// const DAC_MDAC_VAL: u8 = 0x0c;
 const DAC_DOSR_VAL_MSB: u8 = 0x0d;
 const DAC_DOSR_VAL_LSB: u8 = 0x0e;
-//const CODEC_SECONDARY_INTERFACE_CONTROL_1: u8 = 0x1f;
+// const CLKOUT_MUX: u8 = 0x19
+// const CLKOUT_M_VAL: u8 = 0x1a
+const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
+// const DATASLOT_OFFSET_PROGRAMMABILITY: u8 = 0x1c
+// const CODEC_INTERFACE_CONTROL_2: u8 = 0x1d
+// const BCLK_N_VAL: u8 = 0x1e
+// const CODEC_SECONDARY_INTERFACE_CONTROL_1: u8 = 0x1f;
+// const CODEC_SECONDARY_INTERFACE_CONTROL_2: u8 = 0x20
+// const CODEC_SECONDARY_INTERFACE_CONTROL_3: u8 = 0x21
+// const I2C_BUS_CONDITION: u8 = 0x22
+// const DAC_FLAG_REGISTER_1: u8 = 0x25
+// const DAC_FLAG_REGISTER_2: u8 = 0x26
+// const OVERFLOW_FLAGS: u8 = 0x27
+// const DAC_INTERRUPT_FLAGS_STICKY_BITS: u8 = 0x2c
+// const INTERRUPT_FLAGS_DAC: u8 = 0x2e
+// const INT1_CONTROL_REGISTER: u8 = 0x30
+// const INT2_CONTROL_REGISTER: u8 = 0x31
+// const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33
+// const DIN_CONTROL: u8 = 0x36
+const DAC_PROCESSING_BLOCK_SECTION: u8 = 0x3c;
 const DAC_DATA_PATH_SETUP: u8 = 0x3f;
 const DAC_VOLUME_CONTROL: u8 = 0x40;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
+const HEADSET_DETECT: u8 = 0x43;
+// const DRC_CONTROL_1: u8 = 0x44
+// const DRC_CONTROL_2: u8 = 0x45
+// const DRC_CONTROL_3: u8 = 0x46
+// const LEFT_BEEP_GENERATOR: u8 = 0x47
+// const RIGHT_BEEP_GENERATOR: u8 = 0x48
+// const BEEP_LENGTH_MSB: u8 = 0x49
+// const BEEP_LENGTH_MIDDLE_BITS: u8 = 0x4a
+// const BEEP_LENGTH_LSB: u8 = 0x4b
+// const BEEP_SIN_X_MSB: u8 = 0x4c
+// const BEEP_SIN_X_LSB: u8 = 0x4d
+// const BEEP_COS_X_MSB: u8 = 0x4e
+// const BEEP_COS_X_LSB: u8 = 0x4f
+const VOL_MICDET_PIN_SAR_ADC: u8 = 0x74;
 const VOL_MICDET_PIN_GAIN: u8 = 0x75;
 
 // page 1 registers
+// const HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL: u8 = 0x1e
 const HEADPHONE_DRIVERS: u8 = 0x1f;
+const CLASS_D_SPEAKER_AMPLIFIER: u8 = 0x20;
+const HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS: u8 = 0x21;
+// const OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL: u8 = 0x22
 const DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING: u8 = 0x23;
+const LEFT_ANALOG_VOLUME_TO_HPL: u8 = 0x24;
+const RIGHT_ANALOG_VOLUME_TO_HPR: u8 = 0x25;
+const LEFT_ANALOG_VOLUME_TO_SPK: u8 = 0x26;
 const HPL_DRIVER: u8 = 0x28;
+const HPR_DRIVER: u8 = 0x29;
+const CLASS_D_SPK_DRIVER: u8 = 0x2a;
+// const HP_DRIVER_CONTROL: u8 = 0x2c
+const MICBIAS: u8 = 0x2e;
+const INPUT_CM_SETTINGS: u8 = 0x32;
+
+// page 3 registers
+const TIMER_CLOCK_MCLK_DIVIDER: u8 = 0x10;
 
 #[derive(Debug, PartialEq)]
 enum PllClkin {
@@ -116,10 +166,98 @@ enum VolumeControl {
 }
 
 #[derive(Debug, PartialEq)]
+enum VolumeControlHysteresis {
+    HysteresisNone = 0x0,
+    HysteresisOneBit = 0x1,
+    HysteresisTwoBit = 0x2,
+}
+
+#[derive(Debug, PartialEq)]
 enum VolumeControlSoftStepping {
     OneStepPerPeriod = 0x0,
     OneStepPerTwoPeriods = 0x1,
     Disabled = 0x2
+}
+
+#[derive(Debug, PartialEq)]
+enum VolumeControlThroughput {
+    Rate15_625Hz = 0x0, // 10.68 Hz (RC)
+    Rate31_25Hz = 0x1,  // 21.35 Hz (RC)
+    Rate62_5Hz = 0x2,   // 42.71 Hz (RC)
+    Rate125Hz = 0x3,    // 85.20 Hz (RC)
+    Rate250Hz = 0x4,    // 170.0 Hz (RC)
+    Rate500Hz = 0x5,    // 340.0 Hz (RC)
+    Rate1kHz = 0x6,     // 680.0 Hz (RC)
+    Rate2kHz = 0x7,     // 1.37 kHz (RC)
+}
+
+#[derive(Debug, PartialEq)]
+enum OutputStage {
+    Gain6dB = 0x0,
+    Gain12dB = 0x1,
+    Gain18dB = 0x2,
+    Gain24dB = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
+enum MicBiasOutput {
+    PoweredDown = 0x0,
+    Powered2V = 0x1,
+    Powered2_5V = 0x2,
+    PoweredAVDD = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
+enum CodecInterface {
+    I2S = 0x0,
+    DSP = 0x1,
+    RJF = 0x2,
+    LJF = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
+enum CodecInterfaceWordLength {
+    Word16Bits = 0x0,
+    Word20Bits = 0x1,
+    Word24Bits = 0x2,
+    Word32Bits = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
+enum HpPowerOn {
+    Time0us = 0x0,
+    Time15_3us = 0x1,
+    Time153us = 0x2,
+    Time1_53ms = 0x3,
+    Time15_3ms = 0x4,
+    Time76_2ms = 0x5,
+    Time153ms = 0x6,
+    Time304ms = 0x7,
+    Time610ms = 0x8,
+    Time1_22s = 0x9,
+    Time3_04s = 0xa,
+    Time6_1s = 0xb,
+}
+
+#[derive(Debug, PartialEq)]
+enum HpRampUp {
+    Time0ms = 0x0,
+    Time0_98ms = 0x1,
+    Time1_95ms = 0x2,
+    Time3_9ms = 0x3,
+}
+
+impl TryFrom<u8> for OutputStage {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(OutputStage::Gain6dB),
+            0x1 => Ok(OutputStage::Gain12dB),
+            0x2 => Ok(OutputStage::Gain18dB),
+            0x3 => Ok(OutputStage::Gain24dB),
+            _ => Err(())
+        }
+    }
 }
 
 pub struct TLV320DAC3100<I2C, D> {
@@ -135,12 +273,25 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         TLV320DAC3100 { delay, i2c }
     }
 
+    // TODO unit test
+    pub fn get_class_d_spk_driver(&mut self, gain: &mut OutputStage, muted: &mut bool, gains_applied: &mut bool) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, CLASS_D_SPK_DRIVER)?;
+        *gain = ((reg_val & 0x18) >> 3).try_into().unwrap();
+        *muted = (reg_val & 0x4) >> 2 == 0;
+        *gains_applied = (reg_val & 0x1) == 1;
+        Ok(())
+    }
+
     pub fn get_clock_gen_muxing(&mut self, pll_clkin: &mut PllClkin, codec_clkin: &mut CodecClkin) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CLOCK_GEN_MUXING)?;
         *pll_clkin = ((reg_val & 0xc) >> 2).try_into().unwrap();
         *codec_clkin = (reg_val & 0x3).try_into().unwrap();
         Ok(())
     }
+
+    // pub fn get_headset_detection(&mut self) -> TLV320Result<I2C> {
+    //     // TODO
+    // }
 
     pub fn get_ot_flag(&mut self, ot: &mut bool) -> TLV320Result<I2C> {
         *ot = self.read_reg(0, OT_FLAG)? >> 1 == 0;
@@ -183,10 +334,38 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         Ok(self.i2c.write(I2C_DEVICE_ADDRESS, &[PAGE_CONTROL_REGISTER, page]).map_err(TLV320DAC3100Error::I2C)?)
     }
 
+    pub fn set_class_d_spk_amp(&mut self, powered_up: bool) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(1, CLASS_D_SPEAKER_AMPLIFIER)?;
+        reg_val |= (powered_up as u8) << 7;
+        self.write_reg(1, CLASS_D_SPEAKER_AMPLIFIER, reg_val)
+    }
+
+    // TODO unit test
+    pub fn set_class_d_spk_driver(&mut self, output_stage_gain: OutputStage, driver_muted: bool) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(1, CLASS_D_SPK_DRIVER)?;
+        reg_val |= (output_stage_gain as u8) << 3;
+        reg_val |= (driver_muted as u8) << 2;
+        self.write_reg(1, CLASS_D_SPK_DRIVER, reg_val)
+    }
+
     pub fn set_clock_gen_muxing(&mut self, pll_clkin: PllClkin, codec_clkin: CodecClkin) -> TLV320Result<I2C> {
         let mut reg_val = (pll_clkin as u8) << 2;
         reg_val |= codec_clkin as u8;
         self.write_reg(0, CLOCK_GEN_MUXING, reg_val)
+    }
+
+    pub fn set_codec_interface_control_1(
+        &mut self,
+        codec_interface: CodecInterface,
+        word_length: CodecInterfaceWordLength,
+        bclk_output: bool,
+        wclk_output: bool
+    ) -> TLV320Result<I2C> {
+        let mut reg_val = (codec_interface as u8) << 6;
+        reg_val |= (word_length as u8) << 4;
+        reg_val |= (bclk_output as u8) << 3;
+        reg_val |= (wclk_output as u8) << 2;
+        self.write_reg(0, CODEC_INTERFACE_CONTROL_1, reg_val)
     }
 
     // pub fn set_codec_secondary_interface_control_1(&mut self, bclk_from_gpio1: bool, wclk_from_gpio1: bool, din_from_gpio1: bool) -> TLV320Result<I2C> {
@@ -204,6 +383,7 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         right_data_path: RightDataPath,
         soft_stepping: VolumeControlSoftStepping
     ) -> TLV320Result<I2C> {
+        // 1101_0100
         let mut reg_val: u8 = (left_powered as u8) << 7;
         reg_val |= (right_powered as u8) << 6;
         reg_val |= (left_data_path as u8) << 4;
@@ -248,6 +428,23 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         self.write_reg(0, DAC_LEFT_VOLUME_CONTROL, reg_val as u8)
     }
 
+    // TODO unit test
+    pub fn set_dac_processing_block_selection(&mut self, prb: u8) -> TLV320Result<I2C> {
+        if prb == 0 || prb > 25 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = self.read_reg(0, DAC_PROCESSING_BLOCK_SECTION)?;
+        //let mask = 0x31;
+        // reg_val &= !mask;
+        // reg_val |= prb & mask;
+        self.update_reg_val(&mut reg_val, prb, 0x31);
+        self.write_reg(0, DAC_PROCESSING_BLOCK_SECTION, reg_val)
+    }
+
+    // TODO unit test
+    fn update_reg_val(&mut self, reg_val: &mut u8, data: u8, mask: u8) {
+        *reg_val &= !mask;
+        *reg_val |= data & mask
+    }
+
     pub fn set_dac_right_volume_control(&mut self, db: f32) -> TLV320Result<I2C> {
         if db < MIN_DAC_VOLUME_CONTROL_DB || db > MAX_DAC_VOLUME_CONTROL_DB {
             return Err(TLV320DAC3100Error::InvalidArgument)
@@ -290,11 +487,75 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         self.write_reg(1, HEADPHONE_DRIVERS, reg_val)
     }
 
+    // TODO unit test
+    pub fn set_hp_output_drivers_pop_removal_settings(
+        &mut self,
+        optimize_power_down_pop: bool,
+        power_on: HpPowerOn,
+        ramp_up: HpRampUp,
+    ) -> TLV320Result<I2C> {
+        let mut reg_val = (optimize_power_down_pop as u8) << 7;
+        reg_val |= (power_on as u8) << 3;
+        reg_val |= (ramp_up as u8) << 1;
+        self.write_reg(1, HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS, reg_val)
+    }
+
     pub fn set_hpl_driver(&mut self, pga: u8, hpl_muted: bool) -> TLV320Result<I2C> {
-        // TODO validate
+        if pga > 9 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = 1 >> pga;
-        reg_val |= (hpl_muted as u8) << 2;
+        reg_val |= hpl_muted as u8;
+        reg_val |= 1 << 1;
         self.write_reg(1, HPL_DRIVER, reg_val)
+    }
+
+    // TODO unit test
+    pub fn set_hpr_driver(&mut self, pga: u8, hpr_muted: bool) -> TLV320Result<I2C> {
+        if pga > 9 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = 1 >> pga;
+        reg_val |= hpr_muted as u8;
+        reg_val |= 1 << 1;
+        self.write_reg(1, HPR_DRIVER, reg_val)
+    }
+
+    // TODO unit test
+    pub fn set_input_cm_settings(&mut self, ain1_floating: bool, ain2_floating: bool) -> TLV320Result<I2C> {
+        let mut reg_val = (!ain1_floating as u8) << 7;
+        reg_val |= (!ain2_floating as u8) << 6;
+        self.write_reg(1, INPUT_CM_SETTINGS, reg_val)
+    }
+
+    pub fn set_left_analog_volume_to_hpl(&mut self, route_to_hpl: bool, gain: u8) -> TLV320Result<I2C> {
+        if gain > 127 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = (!route_to_hpl as u8) << 7;
+        reg_val |= gain;
+        self.write_reg(1, LEFT_ANALOG_VOLUME_TO_HPL, reg_val)
+    }
+
+    pub fn set_right_analog_volume_to_hpl(&mut self, route_to_hpr: bool, gain: u8) -> TLV320Result<I2C> {
+        if gain > 127 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = (!route_to_hpr as u8) << 7;
+        reg_val |= gain;
+        self.write_reg(1, RIGHT_ANALOG_VOLUME_TO_HPR, reg_val)
+    }
+
+    pub fn set_left_analog_volume_to_spk(&mut self, route_to_class_d: bool, gain: u8) -> TLV320Result<I2C> {
+        if gain > 127 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = (!route_to_class_d as u8) << 7;
+        reg_val |= gain;
+        self.write_reg(1, LEFT_ANALOG_VOLUME_TO_SPK, reg_val)
+    }
+
+    // TODO unit test
+    pub fn set_micbias(
+        &mut self,
+        software_power_down_enabled: bool,
+        powered_if_no_headset_inserted: bool,
+        output: MicBiasOutput
+    ) -> TLV320Result<I2C> {
+        let mut reg_val = (software_power_down_enabled as u8) << 7;
+        reg_val |= (powered_if_no_headset_inserted as u8) << 3;
+        reg_val |= output as u8;
+        self.write_reg(1, MICBIAS, reg_val)
     }
 
     pub fn set_pll_d_value(&mut self, d: u16) -> TLV320Result<I2C> {
@@ -308,6 +569,7 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         if j == 0 || j > 63 { return Err(TLV320DAC3100Error::InvalidArgument) }
         self.write_reg(0, PLL_J_VALUE, j)
     }
+
     pub fn set_pll_p_and_r_values(&mut self, powered: bool, p: u8, r: u8) -> TLV320Result<I2C> {
         if p == 0 || p > 8 { return Err(TLV320DAC3100Error::InvalidArgument) }
         if r == 0 || r > 16 { return Err(TLV320DAC3100Error::InvalidArgument) }
@@ -320,6 +582,85 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
 
     pub fn set_software_reset(&mut self, reset: bool) -> TLV320Result<I2C> {
         self.write_reg(0, SOFTWARE_RESET, reset as u8)
+    }
+
+    // TODO unit test
+    pub fn set_timer_clock_mclk_divider(&mut self, external_mclk: bool, mclk_divider: u8) -> TLV320Result<I2C> {
+        if mclk_divider == 0 || mclk_divider > 128 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = (external_mclk as u8) << 7;
+        if mclk_divider < 128 {
+            reg_val |= mclk_divider;
+        }
+        self.write_reg(3, TIMER_CLOCK_MCLK_DIVIDER, reg_val)
+    }
+
+    pub fn setup(&mut self) -> TLV320Result<I2C> {
+        // p49
+        self.select_page(0)?; // is this needed or will reset do it?
+        self.set_software_reset(true)?;
+        self.set_clock_gen_muxing(PllClkin::Mclk, CodecClkin::PllClk)?;
+        self.set_pll_j_value(8u8)?;
+        self.set_pll_d_value(0u16)?;
+        self.set_pll_p_and_r_values(true, 1u8, 1u8)?;
+        self.set_dac_ndac_val(true, 8u8)?;
+        self.set_dac_ndac_val(true, 2u8)?;
+        self.set_dac_dosr_val(128u16)?;
+
+        // i2s
+        self.set_codec_interface_control_1(CodecInterface::I2S, CodecInterfaceWordLength::Word16Bits, false, false)?;
+
+        // select processing block PRB_P11
+        self.set_dac_processing_block_selection(11u8)?;
+        // 0x01 0x04 (page 8)
+
+        // misc
+        self.set_vol_micdet_pin_sar_adc(false, false, HysteresisNone, VolumeControlThroughput::Rate15_625Hz)?;
+
+        // program analog blocks
+        self.set_headphone_drivers(false, false, HeadphoneCommon::C135V, false)?;
+        self.set_hp_output_drivers_pop_removal_settings(false, HpPowerOn::Time1_22s, HpRampUp::Time3_9ms)?;
+        self.set_dac_l_and_dac_r_output_mixer_routing(DacLeftOutputMixerRouting::LeftChannelMixerAmplifier, false, false, DacRightOutputMixerRouting::RightChannelMixerAmplifier, false, false)?;
+
+        // unmute and set gain of output driver
+        // 0x28 0x06
+        self.set_hpl_driver(0, false)?;
+        // 0x29 0x06
+        self.set_hpr_driver(0, false)?;
+        // 0x2a 0x1c
+        self.set_class_d_spk_driver(OutputStage::Gain24dB, false)?;
+
+        // power up output drivers
+        // 0x1f 0xc2 (1100_0010)
+        self.set_headphone_drivers(true, true, HeadphoneCommon::C135V, false)?;
+        // 0x20 0x86
+        self.set_class_d_spk_amp(false)?;
+        // 0x24 0x92 (10010010)
+        self.set_left_analog_volume_to_hpl(true, 18u8)?;
+        // 0x25 0x92 (10010010)
+        self.set_right_analog_volume_to_hpl(true, 18u8)?;
+        // 0x26 0x92 (10010010)
+        self.set_left_analog_volume_to_spk(true, 18u8)?;
+
+        // Apply waiting time determined by the de-pop settings and the soft-stepping settings
+        // of the driver gain or poll page 1 / register 63
+
+        // power up DAC channels and set digital gain
+        self.set_dac_data_path_setup(false, false, LeftDataPath::Left, RightDataPath::Right, VolumeControlSoftStepping::OneStepPerPeriod)?;
+        self.set_dac_left_volume_control(-22.0)?;
+        self.set_dac_right_volume_control(-22.0)?;
+        // unmute digital volume control
+        self.set_dac_volume_control(false, false, VolumeControl::IndependentChannels)?;
+
+        Ok(())
+    }
+
+    // TODO unit test
+    pub fn set_vol_micdet_pin_sar_adc(&mut self, pin_control: bool, use_mclk: bool, hysteresis: VolumeControlHysteresis, throughput: VolumeControlThroughput) -> TLV320Result<I2C> {
+        let mut reg_val = (pin_control as u8) << 7;
+        reg_val |= (use_mclk as u8) << 6;
+        reg_val |= (hysteresis as u8) << 4;
+        reg_val |= throughput as u8;
+        self.write_reg(0, VOL_MICDET_PIN_SAR_ADC, reg_val)
     }
 
     fn write_reg(&mut self, page: u8, reg_addr: u8, reg_val: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
