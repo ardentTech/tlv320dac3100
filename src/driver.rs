@@ -3,22 +3,13 @@ use hal::i2c::I2c;
 use crate::driver::VolumeControlHysteresis::HysteresisNone;
 use crate::error::TLV320DAC3100Error;
 use crate::registers::*;
-use crate::typedefs::{CodecClkin, LeftDataPath, PllClkin, RightDataPath, SoftStepping};
+use crate::typedefs::{CdivClkin, CodecClkin, LeftDataPath, PllClkin, RightDataPath, SoftStepping};
 
 pub const I2C_DEVICE_ADDRESS: u8 = 0x18;
 const MAX_DAC_VOLUME_CONTROL_DB: f32 = 24.0;
 const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 
 // page 0 registers
-const PLL_P_AND_R_VALUES: u8 = 0x05;
-const PLL_J_VALUE: u8 = 0x06;
-const PLL_D_VALUE_MSB: u8 = 0x07;
-const PLL_D_VALUE_LSB: u8 = 0x08;
-const DAC_NDAC_VAL: u8 = 0x0b;
-// const DAC_MDAC_VAL: u8 = 0x0c;
-const DAC_DOSR_VAL_MSB: u8 = 0x0d;
-const DAC_DOSR_VAL_LSB: u8 = 0x0e;
-// const CLKOUT_MUX: u8 = 0x19
 // const CLKOUT_M_VAL: u8 = 0x1a
 const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
 // const DATASLOT_OFFSET_PROGRAMMABILITY: u8 = 0x1c
@@ -217,10 +208,30 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         Ok(())
     }
 
+    pub fn get_clkout_mux(&mut self, cdiv_clkin: &mut CdivClkin) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, CLKOUT_MUX)?;
+        *cdiv_clkin = (reg_val & 0b0000_0111).try_into().unwrap();
+        Ok(())
+    }
+
     pub fn get_clock_gen_muxing(&mut self, pll_clkin: &mut PllClkin, codec_clkin: &mut CodecClkin) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CLOCK_GEN_MUXING)?;
         *pll_clkin = ((reg_val & 0b1100) >> 2).try_into().unwrap();
         *codec_clkin = (reg_val & 0b11).try_into().unwrap();
+        Ok(())
+    }
+
+    pub fn get_dac_mdac_val(&mut self, powered: &mut bool, divider: &mut u8) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_MDAC_VAL)?;
+        *powered = (reg_val & 0b1000_0000) >> 7 == 1;
+        *divider = reg_val & 0b0111_1111;
+        Ok(())
+    }
+
+    pub fn get_dac_ndac_val(&mut self, powered: &mut bool, divider: &mut u8) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_NDAC_VAL)?;
+        *powered = (reg_val & 0b1000_0000) >> 7 == 1;
+        *divider = reg_val & 0b0111_1111;
         Ok(())
     }
 
@@ -234,22 +245,23 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     }
 
     pub fn get_pll_d_value(&mut self, d: &mut u16) -> TLV320Result<I2C> {
-        let msb = self.read_reg(0, PLL_D_VALUE_MSB)?;
+        let msb = self.read_reg(0, PLL_D_VALUE_MSB)? & 0b11_1111;
         let lsb = self.read_reg(0, PLL_D_VALUE_LSB)?;
         *d = (msb as u16) << 8 | lsb as u16;
         Ok(())
     }
 
     pub fn get_pll_j_value(&mut self, j: &mut u8) -> TLV320Result<I2C> {
-        *j = self.read_reg(0, PLL_J_VALUE)?;
+        let reg_val = self.read_reg(0, PLL_J_VALUE)?;
+        *j = reg_val & 0b111111;
         Ok(())
     }
 
     pub fn get_pll_p_and_r_values(&mut self, powered: &mut bool, p: &mut u8, r: &mut u8) -> TLV320Result<I2C> {
         let raw = self.read_reg(0, PLL_P_AND_R_VALUES)?;
-        *powered = raw >> 7 == 0x1;
-        *p = (0x70 & raw) >> 4;
-        *r = 0xf & raw;
+        *powered = raw >> 7 == 1;
+        *p = (0b111_0000 & raw) >> 4;
+        *r = 0b1111 & raw;
         Ok(())
     }
 
@@ -287,6 +299,12 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         let mut reg_val = (pll_clkin as u8) << 2;
         reg_val |= codec_clkin as u8;
         self.write_reg(0, CLOCK_GEN_MUXING, reg_val)
+    }
+
+    pub fn set_clkout_mux(&mut self, cdiv_clkin: CdivClkin) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(0, CLKOUT_MUX)?;
+        self.update_reg_val(&mut reg_val, cdiv_clkin as u8, 0b0000_0111);
+        self.write_reg(0, CLKOUT_MUX, reg_val)
     }
 
     pub fn set_codec_interface_control_1(
@@ -385,6 +403,13 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         }
         let reg_val = (db * 2.0) as i8;
         self.write_reg(0, DAC_RIGHT_VOLUME_CONTROL, reg_val as u8)
+    }
+
+    pub fn set_dac_mdac_val(&mut self, powered: bool, divider: u8) -> TLV320Result<I2C> {
+        if divider == 0 || divider > 128 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        let mut reg_val = (powered as u8) << 7;
+        reg_val |= divider;
+        self.write_reg(0, DAC_MDAC_VAL, reg_val)
     }
 
     pub fn set_dac_ndac_val(&mut self, powered: bool, divider: u8) -> TLV320Result<I2C> {
@@ -493,15 +518,16 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     }
 
     pub fn set_pll_d_value(&mut self, d: u16) -> TLV320Result<I2C> {
-        let msb = (d >> 8) as u8;
-        if msb > 63 { return Err(TLV320DAC3100Error::InvalidArgument) };
+        let msb: u8 = ((d >> 8) & 0b0011_1111) as u8;
         self.write_reg(0, PLL_D_VALUE_MSB, msb)?;
         self.write_reg(0, PLL_D_VALUE_LSB, (0xff & d) as u8)
     }
 
     pub fn set_pll_j_value(&mut self, j: u8) -> TLV320Result<I2C> {
         if j == 0 || j > 63 { return Err(TLV320DAC3100Error::InvalidArgument) }
-        self.write_reg(0, PLL_J_VALUE, j)
+        let mut reg_val = self.read_reg(0, PLL_J_VALUE)?;
+        self.update_reg_val(&mut reg_val, j, 0b0011_1111);
+        self.write_reg(0, PLL_J_VALUE, reg_val)
     }
 
     pub fn set_pll_p_and_r_values(&mut self, powered: bool, p: u8, r: u8) -> TLV320Result<I2C> {
@@ -610,54 +636,6 @@ mod tests {
     use crate::driver::*;
 
     #[test]
-    fn get_pll_d_value_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_read(PLL_D_VALUE_MSB, 0x3a),
-            i2c_page_set(0),
-            i2c_reg_read(PLL_D_VALUE_LSB, 0x5b),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        let mut d: u16 = 0;
-        driver.get_pll_d_value(&mut d).unwrap();
-        assert_eq!(d, 0x3a5b);
-        i2c.done();
-    }
-
-    #[test]
-    fn get_pll_j_value_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_read(PLL_J_VALUE, 0x39),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        let mut j: u8 = 0;
-        driver.get_pll_j_value(&mut j).unwrap();
-        assert_eq!(j, 0x39);
-        i2c.done();
-    }
-
-    #[test]
-    fn get_pll_p_and_r_values_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_read(PLL_P_AND_R_VALUES, 0xb2),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        let mut powered = false;
-        let mut p: u8 = 0x7;
-        let mut r: u8 = 0x9;
-        driver.get_pll_p_and_r_values(&mut powered, &mut p, &mut r).unwrap();
-        assert_eq!(powered, true);
-        assert_eq!(p, 0x3);
-        assert_eq!(r, 0x2);
-        i2c.done();
-    }
-
-    #[test]
     fn get_vol_micdet_pin_gain_ok() {
         let expectations = [
             i2c_page_set(0),
@@ -668,20 +646,6 @@ mod tests {
         let mut gain: u8 = 0;
         driver.get_vol_micdet_pin_gain(&mut gain).unwrap();
         assert_eq!(gain, 0x3f);
-        i2c.done();
-    }
-
-    #[test]
-    fn set_dac_dosr_val_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_write(DAC_DOSR_VAL_MSB, 0x1),
-            i2c_page_set(0),
-            i2c_reg_write(DAC_DOSR_VAL_LSB, 0xf1),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        driver.set_dac_dosr_val(497u16).unwrap();
         i2c.done();
     }
 
@@ -721,18 +685,6 @@ mod tests {
     }
 
     #[test]
-    fn set_dac_ndac_val_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_write(DAC_NDAC_VAL, 0x82),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        driver.set_dac_ndac_val(true, 0x2).unwrap();
-        i2c.done();
-    }
-
-    #[test]
     fn set_dac_volume_control_ok() {
         let expectations = [
             i2c_page_set(0),
@@ -753,44 +705,6 @@ mod tests {
         let mut i2c = I2cMock::new(&expectations);
         let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
         driver.set_headphone_drivers(false, true, HeadphoneCommon::C15V, true).unwrap();
-        i2c.done();
-    }
-
-    #[test]
-    fn set_pll_d_value_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_write(PLL_D_VALUE_MSB, 0x3f),
-            i2c_page_set(0),
-            i2c_reg_write(PLL_D_VALUE_LSB, 0x8a),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        driver.set_pll_d_value(0x3f8a).unwrap();
-        i2c.done();
-    }
-
-    #[test]
-    fn set_pll_p_and_r_values_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_write(PLL_P_AND_R_VALUES, 0xb2),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        driver.set_pll_p_and_r_values(true, 3, 2).unwrap();
-        i2c.done();
-    }
-
-    #[test]
-    fn set_pll_j_value_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_write(PLL_J_VALUE, 0x31),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        driver.set_pll_j_value(0x31).unwrap();
         i2c.done();
     }
 

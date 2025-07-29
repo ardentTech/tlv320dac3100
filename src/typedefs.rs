@@ -1,4 +1,28 @@
 #[derive(Debug, PartialEq)]
+pub enum CdivClkin {
+    Mclk = 0x0,
+    Bclk = 0x1,
+    Din = 0x2,
+    PllClk = 0x3,
+    DacClk = 0x4,
+    DacModClk = 0x5,
+}
+impl TryFrom<u8> for CdivClkin {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(CdivClkin::Mclk),
+            0x1 => Ok(CdivClkin::Bclk),
+            0x2 => Ok(CdivClkin::Din),
+            0x3 => Ok(CdivClkin::PllClk),
+            0x4 => Ok(CdivClkin::DacClk),
+            0x5 => Ok(CdivClkin::DacModClk),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum CodecClkin {
     Mclk = 0x0,
     Bclk = 0x1,
