@@ -145,3 +145,51 @@ pub enum SoftStepping {
     OneStepPerTwoPeriods = 0x1,
     Disabled = 0x2
 }
+
+#[derive(Debug, PartialEq)]
+pub enum VolumeControlHysteresis {
+    HysteresisNone = 0x0,
+    Hysteresis1Bit = 0x1,
+    Hysteresis2Bits = 0x2,
+}
+impl TryFrom<u8> for VolumeControlHysteresis {
+    type Error = ();
+    // TODO unit test
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(VolumeControlHysteresis::HysteresisNone),
+            0x1 => Ok(VolumeControlHysteresis::Hysteresis1Bit),
+            0x2 => Ok(VolumeControlHysteresis::Hysteresis2Bits),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum VolumeControlThroughput {
+    Rate15_625Hz = 0x0, // 10.68 Hz (RC)
+    Rate31_25Hz = 0x1,  // 21.35 Hz (RC)
+    Rate62_5Hz = 0x2,   // 42.71 Hz (RC)
+    Rate125Hz = 0x3,    // 85.20 Hz (RC)
+    Rate250Hz = 0x4,    // 170.0 Hz (RC)
+    Rate500Hz = 0x5,    // 340.0 Hz (RC)
+    Rate1kHz = 0x6,     // 680.0 Hz (RC)
+    Rate2kHz = 0x7,     // 1.37 kHz (RC)
+}
+impl TryFrom<u8> for VolumeControlThroughput {
+    type Error = ();
+    // TODO unit test
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(VolumeControlThroughput::Rate15_625Hz),
+            0x1 => Ok(VolumeControlThroughput::Rate31_25Hz),
+            0x2 => Ok(VolumeControlThroughput::Rate62_5Hz),
+            0x3 => Ok(VolumeControlThroughput::Rate125Hz),
+            0x4 => Ok(VolumeControlThroughput::Rate250Hz),
+            0x5 => Ok(VolumeControlThroughput::Rate500Hz),
+            0x6 => Ok(VolumeControlThroughput::Rate1kHz),
+            0x7 => Ok(VolumeControlThroughput::Rate2kHz),
+            _ => Err(())
+        }
+    }
+}

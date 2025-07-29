@@ -1,6 +1,5 @@
 use embedded_hal as hal;
 use hal::i2c::I2c;
-use crate::driver::VolumeControlHysteresis::HysteresisNone;
 use crate::error::TLV320DAC3100Error;
 use crate::registers::*;
 use crate::typedefs::*;
@@ -26,7 +25,6 @@ const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 // const INT2_CONTROL_REGISTER: u8 = 0x31
 // const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33
 // const DIN_CONTROL: u8 = 0x36
-const DAC_PROCESSING_BLOCK_SECTION: u8 = 0x3c;
 const DAC_VOLUME_CONTROL: u8 = 0x40;
 const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
@@ -43,7 +41,6 @@ const HEADSET_DETECT: u8 = 0x43;
 // const BEEP_SIN_X_LSB: u8 = 0x4d
 // const BEEP_COS_X_MSB: u8 = 0x4e
 // const BEEP_COS_X_LSB: u8 = 0x4f
-const VOL_MICDET_PIN_SAR_ADC: u8 = 0x74;
 const VOL_MICDET_PIN_GAIN: u8 = 0x75;
 
 // page 1 registers
@@ -86,24 +83,6 @@ enum VolumeControl {
     IndependentChannels = 0x0,
     LeftToRight = 0x1,
     RightToLeft = 0x2,
-}
-
-#[derive(Debug, PartialEq)]
-enum VolumeControlHysteresis {
-    HysteresisNone = 0x0,
-    HysteresisOneBit = 0x1,
-    HysteresisTwoBit = 0x2,
-}
-#[derive(Debug, PartialEq)]
-enum VolumeControlThroughput {
-    Rate15_625Hz = 0x0, // 10.68 Hz (RC)
-    Rate31_25Hz = 0x1,  // 21.35 Hz (RC)
-    Rate62_5Hz = 0x2,   // 42.71 Hz (RC)
-    Rate125Hz = 0x3,    // 85.20 Hz (RC)
-    Rate250Hz = 0x4,    // 170.0 Hz (RC)
-    Rate500Hz = 0x5,    // 340.0 Hz (RC)
-    Rate1kHz = 0x6,     // 680.0 Hz (RC)
-    Rate2kHz = 0x7,     // 1.37 kHz (RC)
 }
 
 #[derive(Debug, PartialEq)]
@@ -230,6 +209,12 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         Ok(())
     }
 
+    pub fn get_dac_processing_block_selection(&mut self, prb: &mut u8) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_PROCESSING_BLOCK_SECTION)?;
+        *prb = reg_val & 0b0001_1111;
+        Ok(())
+    }
+
     pub fn get_headphone_drivers(
         &mut self,
         left_powered: &mut bool,
@@ -239,9 +224,7 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         scd_detected: &mut bool
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, HEADPHONE_DRIVERS)?;
-        //*left_powered = (reg_val & 0b1000_0000) >> 7 == 1;
         *left_powered = (reg_val >> 7) & 0x1 == 1;
-        //*right_powered = (reg_val & 0b0100_0000) >> 6 == 1;
         *right_powered = (reg_val >> 6) & 0x1 == 1;
         *output_voltage = ((reg_val & 0b0001_1000) >> 3).try_into().unwrap();
         *power_down_on_scd = (reg_val >> 1) & 0x1 == 1;
@@ -277,6 +260,15 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
 
     pub fn get_vol_micdet_pin_gain(&mut self, gain: &mut u8) -> TLV320Result<I2C> {
         *gain = self.read_reg(0, VOL_MICDET_PIN_GAIN)?;
+        Ok(())
+    }
+
+    pub fn get_vol_micdet_pin_sar_adc(&mut self, pin_control: &mut bool, use_mclk: &mut bool, hysteresis: &mut VolumeControlHysteresis, throughput: &mut VolumeControlThroughput) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, VOL_MICDET_PIN_SAR_ADC)?;
+        *pin_control = (reg_val >> 7) & 0b1 == 1;
+        *use_mclk = (reg_val >> 6) & 0b1 == 1;
+        *hysteresis = ((reg_val >> 4) & 0b11).try_into().unwrap();
+        *throughput = (reg_val & 0b111).try_into().unwrap();
         Ok(())
     }
 
@@ -391,14 +383,10 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         self.write_reg(0, DAC_LEFT_VOLUME_CONTROL, reg_val as u8)
     }
 
-    // TODO unit test
     pub fn set_dac_processing_block_selection(&mut self, prb: u8) -> TLV320Result<I2C> {
         if prb == 0 || prb > 25 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = self.read_reg(0, DAC_PROCESSING_BLOCK_SECTION)?;
-        //let mask = 0x31;
-        // reg_val &= !mask;
-        // reg_val |= prb & mask;
-        self.update_bits(&mut reg_val, prb, 0x31);
+        self.update_bits(&mut reg_val, prb, 0b0001_1111);
         self.write_reg(0, DAC_PROCESSING_BLOCK_SECTION, reg_val)
     }
 
@@ -584,7 +572,7 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         // 0x01 0x04 (page 8)
 
         // misc
-        self.set_vol_micdet_pin_sar_adc(false, false, HysteresisNone, VolumeControlThroughput::Rate15_625Hz)?;
+        self.set_vol_micdet_pin_sar_adc(false, false, VolumeControlHysteresis::HysteresisNone, VolumeControlThroughput::Rate15_625Hz)?;
 
         // program analog blocks
         self.set_headphone_drivers(false, false, HeadphoneOutputVoltage::Common1_35V, false)?;
@@ -624,12 +612,12 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         Ok(())
     }
 
-    // TODO unit test
     pub fn set_vol_micdet_pin_sar_adc(&mut self, pin_control: bool, use_mclk: bool, hysteresis: VolumeControlHysteresis, throughput: VolumeControlThroughput) -> TLV320Result<I2C> {
-        let mut reg_val = (pin_control as u8) << 7;
-        reg_val |= (use_mclk as u8) << 6;
-        reg_val |= (hysteresis as u8) << 4;
-        reg_val |= throughput as u8;
+        let mut reg_val = self.read_reg(0, VOL_MICDET_PIN_SAR_ADC)?;
+        self.update_bits(&mut reg_val, pin_control as u8, 0b1000_0000);
+        self.update_bits(&mut reg_val, use_mclk as u8, 0b0100_0000);
+        self.update_bits(&mut reg_val, hysteresis as u8, 0b0011_0000);
+        self.update_bits(&mut reg_val, throughput as u8, 0b0000_0111);
         self.write_reg(0, VOL_MICDET_PIN_SAR_ADC, reg_val)
     }
 
