@@ -43,6 +43,66 @@ impl TryFrom<u8> for CodecClkin {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum CodecInterface {
+    I2S = 0x0,
+    DSP = 0x1,
+    RJF = 0x2,
+    LJF = 0x3,
+}
+impl TryFrom<u8> for CodecInterface {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(CodecInterface::I2S),
+            0x1 => Ok(CodecInterface::DSP),
+            0x2 => Ok(CodecInterface::RJF),
+            0x3 => Ok(CodecInterface::LJF),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum CodecInterfaceWordLength {
+    Word16Bits = 0x0,
+    Word20Bits = 0x1,
+    Word24Bits = 0x2,
+    Word32Bits = 0x3,
+}
+impl TryFrom<u8> for CodecInterfaceWordLength {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(CodecInterfaceWordLength::Word16Bits),
+            0x1 => Ok(CodecInterfaceWordLength::Word20Bits),
+            0x2 => Ok(CodecInterfaceWordLength::Word24Bits),
+            0x3 => Ok(CodecInterfaceWordLength::Word32Bits),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HeadphoneOutputVoltage {
+    Common1_35V = 0x00,
+    Common1_5V = 0x01,
+    Common1_65V = 0x02,
+    Common1_8V = 0x03,
+}
+impl TryFrom<u8> for HeadphoneOutputVoltage {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HeadphoneOutputVoltage::Common1_35V),
+            0x1 => Ok(HeadphoneOutputVoltage::Common1_5V),
+            0x2 => Ok(HeadphoneOutputVoltage::Common1_65V),
+            0x3 => Ok(HeadphoneOutputVoltage::Common1_8V),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum LeftDataPath {
     Off = 0x0,
     Left = 0x1,
