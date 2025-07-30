@@ -83,23 +83,61 @@ impl TryFrom<u8> for CodecInterfaceWordLength {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum HeadphoneOutputVoltage {
+pub enum DacLeftOutputMixerRouting {
+    None = 0x0,
+    LeftChannelMixerAmplifier = 0x1,
+    HplDriver = 0x2
+}
+
+#[derive(Debug, PartialEq)]
+pub enum DacRightOutputMixerRouting {
+    None = 0x0,
+    RightChannelMixerAmplifier = 0x1,
+    HprDriver = 0x2
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HpOutputVoltage {
     Common1_35V = 0x00,
     Common1_5V = 0x01,
     Common1_65V = 0x02,
     Common1_8V = 0x03,
 }
-impl TryFrom<u8> for HeadphoneOutputVoltage {
+impl TryFrom<u8> for HpOutputVoltage {
     type Error = ();
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x0 => Ok(HeadphoneOutputVoltage::Common1_35V),
-            0x1 => Ok(HeadphoneOutputVoltage::Common1_5V),
-            0x2 => Ok(HeadphoneOutputVoltage::Common1_65V),
-            0x3 => Ok(HeadphoneOutputVoltage::Common1_8V),
+            0x0 => Ok(HpOutputVoltage::Common1_35V),
+            0x1 => Ok(HpOutputVoltage::Common1_5V),
+            0x2 => Ok(HpOutputVoltage::Common1_65V),
+            0x3 => Ok(HpOutputVoltage::Common1_8V),
             _ => Err(())
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HpPowerOn {
+    Time0us = 0x0,
+    Time15_3us = 0x1,
+    Time153us = 0x2,
+    Time1_53ms = 0x3,
+    Time15_3ms = 0x4,
+    Time76_2ms = 0x5,
+    Time153ms = 0x6,
+    Time304ms = 0x7,
+    Time610ms = 0x8,
+    Time1_22s = 0x9,
+    Time3_04s = 0xa,
+    Time6_1s = 0xb,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HpRampUp {
+    Time0ms = 0x0,
+    Time0_98ms = 0x1,
+    Time1_95ms = 0x2,
+    Time3_9ms = 0x3,
 }
 
 #[derive(Debug, PartialEq)]
