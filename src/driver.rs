@@ -1,5 +1,6 @@
 use embedded_hal as hal;
 use hal::i2c::I2c;
+use crate::bits::set_bits;
 use crate::error::TLV320DAC3100Error;
 use crate::registers::*;
 use crate::typedefs::*;
@@ -271,7 +272,7 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
 
     pub fn set_clkout_mux(&mut self, cdiv_clkin: CdivClkin) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(0, CLKOUT_MUX)?;
-        self.update_bits(&mut reg_val, cdiv_clkin as u8, 0b0000_0111);
+        set_bits(&mut reg_val, cdiv_clkin as u8, 0, 0b0000_0111);
         self.write_reg(0, CLKOUT_MUX, reg_val)
     }
 
@@ -283,10 +284,10 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         wclk_output: bool
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(0, CODEC_INTERFACE_CONTROL_1)?;
-        self.update_bits(&mut reg_val, (codec_interface as u8) << 6, 0b1100_0000);
-        self.update_bits(&mut reg_val, (word_length as u8) << 4, 0b0011_0000);
-        self.update_bits(&mut reg_val, (bclk_output as u8) << 3, 0b0000_1000);
-        self.update_bits(&mut reg_val, (wclk_output as u8) << 2, 0b0000_0100);
+        set_bits(&mut reg_val, codec_interface as u8, 6, 0b1100_0000);
+        set_bits(&mut reg_val, word_length as u8, 4, 0b0011_0000);
+        set_bits(&mut reg_val, bclk_output as u8, 3, 0b0000_1000);
+        set_bits(&mut reg_val, wclk_output as u8, 2, 0b0000_0100);
         self.write_reg(0, CODEC_INTERFACE_CONTROL_1, reg_val)
     }
 
@@ -327,12 +328,12 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         hpl_output_routed_to_hpr: bool
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(1, DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING)?;
-        self.update_bits(&mut reg_val, (left_routing as u8) << 6, 0b1100_0000);
-        self.update_bits(&mut reg_val, (ain1_input_routed_left as u8) << 5, 0b0010_0000);
-        self.update_bits(&mut reg_val, (ain2_input_routed_left as u8) << 4, 0b0001_0000);
-        self.update_bits(&mut reg_val, (right_routing as u8) << 2, 0b0000_1100);
-        self.update_bits(&mut reg_val, (ain2_input_routed_right as u8) << 1, 0b0000_0010);
-        self.update_bits(&mut reg_val, hpl_output_routed_to_hpr as u8, 0b0000_0001);
+        set_bits(&mut reg_val, left_routing as u8, 6, 0b1100_0000);
+        set_bits(&mut reg_val, ain1_input_routed_left as u8, 5, 0b0010_0000);
+        set_bits(&mut reg_val, ain2_input_routed_left as u8, 4, 0b0001_0000);
+        set_bits(&mut reg_val, right_routing as u8, 2, 0b0000_1100);
+        set_bits(&mut reg_val, ain2_input_routed_right as u8, 1, 0b0000_0010);
+        set_bits(&mut reg_val, hpl_output_routed_to_hpr as u8, 0, 0b0000_0001);
         self.write_reg(1, DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING, reg_val)
     }
 
@@ -347,13 +348,8 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     pub fn set_dac_processing_block_selection(&mut self, prb: u8) -> TLV320Result<I2C> {
         if prb == 0 || prb > 25 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = self.read_reg(0, DAC_PROCESSING_BLOCK_SECTION)?;
-        self.update_bits(&mut reg_val, prb, 0b0001_1111);
+        set_bits(&mut reg_val, prb, 0, 0b0001_1111);
         self.write_reg(0, DAC_PROCESSING_BLOCK_SECTION, reg_val)
-    }
-
-    fn update_bits(&mut self, reg_val: &mut u8, data: u8, mask: u8) {
-        *reg_val &= !mask;
-        *reg_val |= data & mask
     }
 
     pub fn set_dac_right_volume_control(&mut self, db: f32) -> TLV320Result<I2C> {
@@ -398,10 +394,10 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         power_down_on_scd: bool
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(1, HEADPHONE_DRIVERS)?;
-        self.update_bits(&mut reg_val, (left_powered as u8) << 7, 0b1000_0000);
-        self.update_bits(&mut reg_val, (right_powered as u8) << 6, 0b0100_0000);
-        self.update_bits(&mut reg_val, (common as u8) << 3, 0b0001_1000);
-        self.update_bits(&mut reg_val, (power_down_on_scd as u8) << 1, 0b0000_0010);
+        set_bits(&mut reg_val, left_powered as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, right_powered as u8, 6, 0b0100_0000);
+        set_bits(&mut reg_val, common as u8, 3, 0b0001_1000);
+        set_bits(&mut reg_val, power_down_on_scd as u8, 1, 0b0000_0010);
         self.write_reg(1, HEADPHONE_DRIVERS, reg_val)
     }
 
@@ -413,9 +409,9 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         ramp_up: HpRampUp,
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(1, HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS)?;
-        self.update_bits(&mut reg_val, (optimize_power_down_pop as u8) << 7, 0b1000_0000);
-        self.update_bits(&mut reg_val, (power_on as u8) << 3, 0b0111_1000);
-        self.update_bits(&mut reg_val, (ramp_up as u8) << 1, 0b0000_0110);
+        set_bits(&mut reg_val, optimize_power_down_pop as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, power_on as u8, 3, 0b0111_1000);
+        set_bits(&mut reg_val, ramp_up as u8, 1, 0b0000_0110);
         self.write_reg(1, HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS, reg_val)
     }
 
@@ -423,8 +419,8 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     pub fn set_hpl_driver(&mut self, pga: u8, hpl_muted: bool) -> TLV320Result<I2C> {
         if pga > 9 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = self.read_reg(1, HPL_DRIVER)?;
-        self.update_bits(&mut reg_val, pga << 3, 0b0111_1000);
-        self.update_bits(&mut reg_val, (hpl_muted as u8) << 2, 0b0000_0100);
+        set_bits(&mut reg_val, pga, 3, 0b0111_1000);
+        set_bits(&mut reg_val, hpl_muted as u8, 2, 0b0000_0100);
         self.write_reg(1, HPL_DRIVER, reg_val)
     }
 
@@ -487,7 +483,7 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     pub fn set_pll_j_value(&mut self, j: u8) -> TLV320Result<I2C> {
         if j == 0 || j > 63 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = self.read_reg(0, PLL_J_VALUE)?;
-        self.update_bits(&mut reg_val, j, 0b0011_1111);
+        set_bits(&mut reg_val, j, 0, 0b0011_1111);
         self.write_reg(0, PLL_J_VALUE, reg_val)
     }
 
@@ -577,10 +573,10 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
 
     pub fn set_vol_micdet_pin_sar_adc(&mut self, pin_control: bool, use_mclk: bool, hysteresis: VolumeControlHysteresis, throughput: VolumeControlThroughput) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(0, VOL_MICDET_PIN_SAR_ADC)?;
-        self.update_bits(&mut reg_val, (pin_control as u8) << 7, 0b1000_0000);
-        self.update_bits(&mut reg_val, (use_mclk as u8) << 6, 0b0100_0000);
-        self.update_bits(&mut reg_val, (hysteresis as u8) << 4, 0b0011_0000);
-        self.update_bits(&mut reg_val, throughput as u8, 0b0000_0111);
+        set_bits(&mut reg_val, pin_control as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, use_mclk as u8, 6, 0b0100_0000);
+        set_bits(&mut reg_val, hysteresis as u8, 4, 0b0011_0000);
+        set_bits(&mut reg_val, throughput as u8, 0, 0b0000_0111);
         self.write_reg(0, VOL_MICDET_PIN_SAR_ADC, reg_val)
     }
 
