@@ -17,10 +17,18 @@ pub const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
 pub const DAC_PROCESSING_BLOCK_SECTION: u8 = 0x3c;
 
 pub const DAC_DATA_PATH_SETUP: u8 = 0x3f;
+pub const DAC_VOLUME_CONTROL: u8 = 0x40;
+pub const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
+pub const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
 pub const VOL_MICDET_PIN_SAR_ADC: u8 = 0x74;
 
 // page 1
 pub const HEADPHONE_DRIVERS: u8 = 0x1f;
 pub const HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS: u8 = 0x21;
 pub const DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING: u8 = 0x23;
+pub const LEFT_ANALOG_VOLUME_TO_HPL: u8 = 0x24;
+pub const RIGHT_ANALOG_VOLUME_TO_HPR: u8 = 0x25;
+pub const LEFT_ANALOG_VOLUME_TO_SPK: u8 = 0x26;
 pub const HPL_DRIVER: u8 = 0x28;
+pub const HPR_DRIVER: u8 = 0x29;
+pub const CLASS_D_SPK_DRIVER: u8 = 0x2a;

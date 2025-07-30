@@ -1,8 +1,8 @@
 use embedded_hal_mock::eh1::delay::NoopDelay;
 use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 use tlv320dac3100::driver::*;
-use tlv320dac3100::registers::{CLKOUT_MUX, CLKOUT_M_VAL, CLOCK_GEN_MUXING, CODEC_INTERFACE_CONTROL_1, DAC_DATA_PATH_SETUP, DAC_DOSR_VAL_LSB, DAC_DOSR_VAL_MSB, DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING, DAC_MDAC_VAL, DAC_NDAC_VAL, DAC_PROCESSING_BLOCK_SECTION, HEADPHONE_DRIVERS, HPL_DRIVER, HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS, OT_FLAG, PAGE_CONTROL, PLL_D_VALUE_LSB, PLL_D_VALUE_MSB, PLL_J_VALUE, PLL_P_AND_R_VALUES, SOFTWARE_RESET, VOL_MICDET_PIN_SAR_ADC};
-use tlv320dac3100::typedefs::{CdivClkin, CodecClkin, CodecInterface, CodecInterfaceWordLength, DacLeftOutputMixerRouting, DacRightOutputMixerRouting, HpOutputVoltage, HpPowerOn, HpRampUp, LeftDataPath, PllClkin, RightDataPath, SoftStepping, VolumeControlHysteresis, VolumeControlThroughput};
+use tlv320dac3100::registers::*;
+use tlv320dac3100::typedefs::*;
 
 #[test]
 fn get_clkout_m_val_ok() {
@@ -237,13 +237,20 @@ fn get_vol_micdet_pin_sar_adc_ok() {
 #[test]
 fn set_class_d_speaker_amplifier_ok() {
     let expectations = [
-        i2c_page_set(0),
-        i2c_reg_write(DAC_DATA_PATH_SETUP, 0xd4),
+        i2c_page_set(1),
+        i2c_reg_read(CLASS_D_SPK_DRIVER, 0b0000_0000),
+        i2c_page_set(1),
+        i2c_reg_write(CLASS_D_SPK_DRIVER, 0b0001_0100),
     ];
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-    driver.set_dac_data_path_setup(true, true, LeftDataPath::Left, RightDataPath::Right, SoftStepping::OneStepPerPeriod).unwrap();
+    driver.set_class_d_spk_driver(OutputStage::Gain18dB, false).unwrap();
     i2c.done();
+}
+
+#[test]
+fn set_class_d_spk_driver_ok() {
+
 }
 
 #[test]
@@ -307,6 +314,18 @@ fn set_codec_interface_control_1() {
 }
 
 #[test]
+fn set_dac_data_path_setup_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(DAC_DATA_PATH_SETUP, 0b1000_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_dac_data_path_setup(true, false, LeftDataPath::Off, RightDataPath::Right, SoftStepping::OneStepPerPeriod).unwrap();
+    i2c.done();
+}
+
+#[test]
 fn set_dac_dosr_val_invalid_osr_err() {
     let mut i2c = I2cMock::new(&[]);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
@@ -339,6 +358,26 @@ fn set_dac_l_and_dac_r_output_mixer_routing_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
     driver.set_dac_l_and_dac_r_output_mixer_routing(DacLeftOutputMixerRouting::LeftChannelMixerAmplifier, true, false, DacRightOutputMixerRouting::None, false, true).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_dac_left_volume_control_invalid_db_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_dac_left_volume_control(-64.0).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_dac_left_volume_control_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(DAC_LEFT_VOLUME_CONTROL, 46u8),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_dac_left_volume_control(23.25).unwrap();
     i2c.done();
 }
 
@@ -401,6 +440,40 @@ fn set_dac_processing_block_selection_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
     driver.set_dac_processing_block_selection(11).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_dac_right_volume_control_invalid_db_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_dac_right_volume_control(25.0).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_dac_right_volume_control_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(DAC_RIGHT_VOLUME_CONTROL, 22u8),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_dac_right_volume_control(11.0).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_dac_volume_control_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_VOLUME_CONTROL, 0b1110_1100),
+        i2c_page_set(0),
+        i2c_reg_write(DAC_VOLUME_CONTROL, 0b1110_0000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_dac_volume_control(false, false, VolumeControl::IndependentChannels).unwrap();
     i2c.done();
 }
 
@@ -469,6 +542,72 @@ fn set_hpl_driver_ok() {
 }
 
 #[test]
+fn set_hpr_driver_invalid_hpl_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_hpr_driver(0b1010, false).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_hpr_driver_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HPR_DRIVER, 0b0001_0110),
+        i2c_page_set(1),
+        i2c_reg_write(HPR_DRIVER, 0b0100_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_hpr_driver(8u8, true).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_left_analog_volume_to_hpl_invalid_gain_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_left_analog_volume_to_hpl(true, 128).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_left_analog_volume_to_hpl_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(LEFT_ANALOG_VOLUME_TO_HPL, 0b1101_1001),
+        i2c_page_set(1),
+        i2c_reg_write(LEFT_ANALOG_VOLUME_TO_HPL, 0b11010001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_left_analog_volume_to_hpl(true, 81u8).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_left_analog_volume_to_spk_invalid_gain_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_left_analog_volume_to_spk(true, 128).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_left_analog_volume_to_spk_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(LEFT_ANALOG_VOLUME_TO_SPK, 0b1101_1001),
+        i2c_page_set(1),
+        i2c_reg_write(LEFT_ANALOG_VOLUME_TO_SPK, 0b1100_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_left_analog_volume_to_spk(true, 67u8).unwrap();
+    i2c.done();
+}
+
+#[test]
 fn set_pll_j_value_invalid_j_err() {
     let mut i2c = I2cMock::new(&[]);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
@@ -515,6 +654,28 @@ fn set_pll_p_and_r_values_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
     driver.set_pll_p_and_r_values(true, 3, 2).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_right_analog_volume_to_hpr_invalid_gain_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_right_analog_volume_to_hpr(true, 128).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_right_analog_volume_to_hpr_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(RIGHT_ANALOG_VOLUME_TO_HPR, 0b1010_0110),
+        i2c_page_set(1),
+        i2c_reg_write(RIGHT_ANALOG_VOLUME_TO_HPR, 0b1011_1001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_right_analog_volume_to_hpr(true, 57u8).unwrap();
     i2c.done();
 }
 

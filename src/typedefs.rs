@@ -149,6 +149,14 @@ pub enum LeftDataPath {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum OutputStage {
+    Gain6dB = 0x0,
+    Gain12dB = 0x1,
+    Gain18dB = 0x2,
+    Gain24dB = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum PllClkin {
     Mclk = 0x0,
     Bclk = 0x1,
@@ -182,6 +190,13 @@ pub enum SoftStepping {
     OneStepPerPeriod = 0x0,
     OneStepPerTwoPeriods = 0x1,
     Disabled = 0x2
+}
+
+#[derive(Debug, PartialEq)]
+pub enum VolumeControl {
+    IndependentChannels = 0x0,
+    LeftToRight = 0x1,
+    RightToLeft = 0x2,
 }
 
 #[derive(Debug, PartialEq)]
