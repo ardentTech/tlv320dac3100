@@ -1,3 +1,5 @@
+// // TODO unit test all try_froms
+
 #[derive(Debug, PartialEq)]
 pub enum CdivClkin {
     Mclk = 0x0,
@@ -94,6 +96,19 @@ pub enum DacRightOutputMixerRouting {
     None = 0x0,
     RightChannelMixerAmplifier = 0x1,
     HprDriver = 0x2
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Gpio1Mode {
+    Disabled = 0x0,
+    Input = 0x1,
+    Gpi = 0x2,
+    Gpo = 0x3,
+    ClkOut = 0x4,
+    Int1 = 0x5,
+    Int2 = 0x6,
+    BclkOut = 0x8,
+    WclkOut = 0x9,
 }
 
 #[derive(Debug, PartialEq)]
@@ -211,11 +226,31 @@ pub enum LeftDataPath {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum MicBiasOutput {
+    PoweredDown = 0x0,
+    Powered2V = 0x1,
+    Powered2_5V = 0x2,
+    PoweredAVDD = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum OutputStage {
     Gain6dB = 0x0,
     Gain12dB = 0x1,
     Gain18dB = 0x2,
     Gain24dB = 0x3,
+}
+impl TryFrom<u8> for OutputStage {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(OutputStage::Gain6dB),
+            0x1 => Ok(OutputStage::Gain12dB),
+            0x2 => Ok(OutputStage::Gain18dB),
+            0x3 => Ok(OutputStage::Gain24dB),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -227,7 +262,6 @@ pub enum PllClkin {
 }
 impl TryFrom<u8> for PllClkin {
     type Error = ();
-    // TODO unit test
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x0 => Ok(PllClkin::Mclk),
@@ -269,7 +303,6 @@ pub enum VolumeControlHysteresis {
 }
 impl TryFrom<u8> for VolumeControlHysteresis {
     type Error = ();
-    // TODO unit test
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x0 => Ok(VolumeControlHysteresis::HysteresisNone),
@@ -293,7 +326,6 @@ pub enum VolumeControlThroughput {
 }
 impl TryFrom<u8> for VolumeControlThroughput {
     type Error = ();
-    // TODO unit test
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x0 => Ok(VolumeControlThroughput::Rate15_625Hz),

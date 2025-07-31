@@ -23,7 +23,6 @@ const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 // const INTERRUPT_FLAGS_DAC: u8 = 0x2e
 // const INT1_CONTROL_REGISTER: u8 = 0x30
 // const INT2_CONTROL_REGISTER: u8 = 0x31
-// const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33
 // const DIN_CONTROL: u8 = 0x36
 // const DRC_CONTROL_1: u8 = 0x44
 // const DRC_CONTROL_2: u8 = 0x45
@@ -44,34 +43,10 @@ const VOL_MICDET_PIN_GAIN: u8 = 0x75;
 const CLASS_D_SPEAKER_AMPLIFIER: u8 = 0x20;
 // const OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL: u8 = 0x22
 // const HP_DRIVER_CONTROL: u8 = 0x2c
-const MICBIAS: u8 = 0x2e;
 const INPUT_CM_SETTINGS: u8 = 0x32;
 
 // page 3 registers
 const TIMER_CLOCK_MCLK_DIVIDER: u8 = 0x10;
-
-// TODO unit test all enum try_into()s
-
-#[derive(Debug, PartialEq)]
-enum MicBiasOutput {
-    PoweredDown = 0x0,
-    Powered2V = 0x1,
-    Powered2_5V = 0x2,
-    PoweredAVDD = 0x3,
-}
-
-impl TryFrom<u8> for OutputStage {
-    type Error = ();
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0x0 => Ok(OutputStage::Gain6dB),
-            0x1 => Ok(OutputStage::Gain12dB),
-            0x2 => Ok(OutputStage::Gain18dB),
-            0x3 => Ok(OutputStage::Gain24dB),
-            _ => Err(())
-        }
-    }
-}
 
 pub struct TLV320DAC3100<I2C, D> {
     delay: D,
@@ -399,6 +374,14 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         self.write_reg(0, if left_channel { DAC_LEFT_VOLUME_CONTROL } else { DAC_RIGHT_VOLUME_CONTROL }, reg_val as u8)
     }
 
+    // TODO getter
+    pub fn set_gpio1_io_pin_control(&mut self, mode: Gpio1Mode) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(0, GPIO1_IN_OUT_PIN_CONTROL)?;
+        set_bits(&mut reg_val, mode as u8, 2, 0b0011_1100);
+        // TODO output value?
+        self.write_reg(0, GPIO1_IN_OUT_PIN_CONTROL, reg_val)
+    }
+
     pub fn set_headphone_drivers(
         &mut self,
         left_powered: bool,
@@ -462,6 +445,14 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     }
 
     // TODO getter
+    // TODO add remaining args
+    pub fn set_int1_control_register(&mut self, headset_detect: bool) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(0, INT1_CONTROL_REGISTER)?;
+        set_bits(&mut reg_val, headset_detect as u8, 7, 0b1000_0000);
+        self.write_reg(0, INT1_CONTROL_REGISTER, reg_val)
+    }
+
+    // TODO getter
     pub fn set_left_analog_volume_to_hpl(&mut self, route_to_hpl: bool, gain: u8) -> TLV320Result<I2C> {
         if gain > 127 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = self.read_reg(1, LEFT_ANALOG_VOLUME_TO_HPL)?;
@@ -488,16 +479,17 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         self.write_reg(1, LEFT_ANALOG_VOLUME_TO_SPK, reg_val)
     }
 
-    // TODO unit test
+    // TODO getter
     pub fn set_micbias(
         &mut self,
-        software_power_down_enabled: bool,
-        powered_if_no_headset_inserted: bool,
+        power_down: bool,
+        always_on: bool,
         output: MicBiasOutput
     ) -> TLV320Result<I2C> {
-        let mut reg_val = (software_power_down_enabled as u8) << 7;
-        reg_val |= (powered_if_no_headset_inserted as u8) << 3;
-        reg_val |= output as u8;
+        let mut reg_val = self.read_reg(1, MICBIAS)?;
+        set_bits(&mut reg_val, power_down as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, always_on as u8, 3, 0b0000_1000);
+        set_bits(&mut reg_val, output as u8, 0, 0b0000_0011);
         self.write_reg(1, MICBIAS, reg_val)
     }
 

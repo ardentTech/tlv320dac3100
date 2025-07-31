@@ -522,6 +522,20 @@ fn set_dac_volume_control_ok() {
 }
 
 #[test]
+fn set_micbias_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(MICBIAS, 0b0000_0000),
+        i2c_page_set(1),
+        i2c_reg_write(MICBIAS, 0b0000_1011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_micbias(false, true, MicBiasOutput::PoweredAVDD).unwrap();
+    i2c.done();
+}
+
+#[test]
 fn set_pll_d_value_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -532,6 +546,20 @@ fn set_pll_d_value_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
     driver.set_pll_d_value(0x3f8a).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_gpio1_io_pin_control_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(GPIO1_IN_OUT_PIN_CONTROL, 0b1100_0000),
+        i2c_page_set(0),
+        i2c_reg_write(GPIO1_IN_OUT_PIN_CONTROL, 0b1101_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_gpio1_io_pin_control(Gpio1Mode::Int1).unwrap();
     i2c.done();
 }
 
@@ -618,6 +646,20 @@ fn set_hpr_driver_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
     driver.set_hpr_driver(8u8, true).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_int1_control_register_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(INT1_CONTROL_REGISTER, 0b0001_0010),
+        i2c_page_set(0),
+        i2c_reg_write(INT1_CONTROL_REGISTER, 0b1001_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_int1_control_register(true).unwrap();
     i2c.done();
 }
 
