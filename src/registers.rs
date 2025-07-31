@@ -14,6 +14,7 @@ pub const DAC_DOSR_VAL_LSB: u8 = 0x0e;
 pub const CLKOUT_MUX: u8 = 0x19;
 pub const CLKOUT_M_VAL: u8 = 0x1a;
 pub const CODEC_INTERFACE_CONTROL_1: u8 = 0x1b;
+pub const DAC_INTERRUPT_FLAGS_STICKY_BITS: u8 = 0x2c;
 pub const DAC_PROCESSING_BLOCK_SECTION: u8 = 0x3c;
 
 pub const DAC_DATA_PATH_SETUP: u8 = 0x3f;

@@ -20,7 +20,6 @@ const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 // const DAC_FLAG_REGISTER_1: u8 = 0x25
 // const DAC_FLAG_REGISTER_2: u8 = 0x26
 // const OVERFLOW_FLAGS: u8 = 0x27
-// const DAC_INTERRUPT_FLAGS_STICKY_BITS: u8 = 0x2c
 // const INTERRUPT_FLAGS_DAC: u8 = 0x2e
 // const INT1_CONTROL_REGISTER: u8 = 0x30
 // const INT2_CONTROL_REGISTER: u8 = 0x31
@@ -128,6 +127,25 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         *word_length = ((reg_val >> 4) & 0b11).try_into().unwrap();
         *bclk_output = ((reg_val >> 3) & 0b1) == 1;
         *wclk_output = ((reg_val >> 2) & 0b1) == 1;
+        Ok(())
+    }
+
+    pub fn get_dac_interrupt_flags(
+        &mut self,
+        left_scd: &mut bool,
+        right_scd: &mut bool,
+        headset_button_pressed: &mut bool,
+        headset_insert_removal_detected: &mut bool,
+        left_dac_signal_above_drc: &mut bool,
+        right_dac_signal_above_drc: &mut bool,
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_INTERRUPT_FLAGS_STICKY_BITS)?;
+        *left_scd = (reg_val >> 7) & 0b1 == 1;
+        *right_scd = (reg_val >> 6) & 0b1 == 1;
+        *headset_button_pressed = (reg_val >> 5) & 0b1 == 1;
+        *headset_insert_removal_detected = (reg_val >> 4) & 0b1 == 1;
+        *left_dac_signal_above_drc = (reg_val >> 3) & 0b1 == 1;
+        *right_dac_signal_above_drc = (reg_val >> 2) & 0b1 == 1;
         Ok(())
     }
 

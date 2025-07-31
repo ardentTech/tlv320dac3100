@@ -71,6 +71,30 @@ fn get_codec_interface_control_1_ok() {
 }
 
 #[test]
+fn get_dac_interrupt_flags() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_INTERRUPT_FLAGS_STICKY_BITS, 0b1111_1100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    let mut left_scd = false;
+    let mut right_scd = false;
+    let mut headset_button_pressed = false;
+    let mut headset_insert_removal_detected = false;
+    let mut left_dac_signal_above_drc = false;
+    let mut right_dac_signal_above_drc = false;
+    driver.get_dac_interrupt_flags(&mut left_scd, &mut right_scd, &mut headset_button_pressed, &mut headset_insert_removal_detected, &mut left_dac_signal_above_drc, &mut right_dac_signal_above_drc).unwrap();
+    assert!(left_scd);
+    assert!(right_scd);
+    assert!(headset_button_pressed);
+    assert!(headset_insert_removal_detected);
+    assert!(left_dac_signal_above_drc);
+    assert!(left_dac_signal_above_drc);
+    i2c.done();
+}
+
+#[test]
 fn get_dac_mdac_val_ok() {
     let expectations = [
         i2c_page_set(0),
