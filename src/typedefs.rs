@@ -97,6 +97,68 @@ pub enum DacRightOutputMixerRouting {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum HeadsetButtonPressDebounce {
+    Debounce0ms = 0x0,
+    Debounce8ms = 0x1, // sampled with 8ms clock
+    Debounce16ms = 0x2, // sampled with 16ms clock
+    Debounce32ms = 0x3, // sampled with 32ms clock
+}
+impl TryFrom<u8> for HeadsetButtonPressDebounce {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HeadsetButtonPressDebounce::Debounce0ms),
+            0x1 => Ok(HeadsetButtonPressDebounce::Debounce8ms),
+            0x2 => Ok(HeadsetButtonPressDebounce::Debounce16ms),
+            0x3 => Ok(HeadsetButtonPressDebounce::Debounce32ms),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HeadsetDetected {
+    None = 0x0,
+    WithoutMic = 0x1,
+    WithMic = 0x3,
+}
+impl TryFrom<u8> for HeadsetDetected {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HeadsetDetected::None),
+            0x1 => Ok(HeadsetDetected::WithoutMic),
+            0x3 => Ok(HeadsetDetected::WithMic),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HeadsetDetectionDebounce {
+    Debounce16ms = 0x0, // sampled with 2ms clock
+    Debounce32ms = 0x1, // sampled with 4ms clock
+    Debounce64ms = 0x2, // sampled with 8ms clock
+    Debounce128ms = 0x3, // sampled with 16ms clock
+    Debounce256ms = 0x4, // sampled with 32ms clock
+    Debounce512ms = 0x5, // sampled with 64ms clock
+}
+impl TryFrom<u8> for HeadsetDetectionDebounce {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HeadsetDetectionDebounce::Debounce16ms),
+            0x1 => Ok(HeadsetDetectionDebounce::Debounce32ms),
+            0x2 => Ok(HeadsetDetectionDebounce::Debounce64ms),
+            0x3 => Ok(HeadsetDetectionDebounce::Debounce128ms),
+            0x4 => Ok(HeadsetDetectionDebounce::Debounce256ms),
+            0x5 => Ok(HeadsetDetectionDebounce::Debounce512ms),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum HpOutputVoltage {
     Common1_35V = 0x00,
     Common1_5V = 0x01,

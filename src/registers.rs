@@ -20,6 +20,7 @@ pub const DAC_DATA_PATH_SETUP: u8 = 0x3f;
 pub const DAC_VOLUME_CONTROL: u8 = 0x40;
 pub const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;
 pub const DAC_RIGHT_VOLUME_CONTROL: u8 = 0x42;
+pub const HEADSET_DETECTION: u8 = 0x43;
 pub const VOL_MICDET_PIN_SAR_ADC: u8 = 0x74;
 
 // page 1

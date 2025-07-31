@@ -26,7 +26,6 @@ const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 // const INT2_CONTROL_REGISTER: u8 = 0x31
 // const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33
 // const DIN_CONTROL: u8 = 0x36
-const HEADSET_DETECT: u8 = 0x43;
 // const DRC_CONTROL_1: u8 = 0x44
 // const DRC_CONTROL_2: u8 = 0x45
 // const DRC_CONTROL_3: u8 = 0x46
@@ -149,6 +148,21 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     pub fn get_dac_processing_block_selection(&mut self, prb: &mut u8) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, DAC_PROCESSING_BLOCK_SECTION)?;
         *prb = reg_val & 0b0001_1111;
+        Ok(())
+    }
+
+    pub fn get_headset_detection(
+        &mut self,
+        enabled: &mut bool,
+        detected: &mut HeadsetDetected,
+        debounce: &mut HeadsetDetectionDebounce,
+        button_debounce: &mut HeadsetButtonPressDebounce
+    ) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(0, HEADSET_DETECTION)?;
+        *enabled = (reg_val >> 7) == 1;
+        *detected = ((reg_val >> 5) & 0b11).try_into().unwrap();
+        *debounce = ((reg_val >> 2) &0b111).try_into().unwrap();
+        *button_debounce = (reg_val & 0b11).try_into().unwrap();
         Ok(())
     }
 
@@ -380,6 +394,14 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
         set_bits(&mut reg_val, common as u8, 3, 0b0001_1000);
         set_bits(&mut reg_val, power_down_on_scd as u8, 1, 0b0000_0010);
         self.write_reg(1, HEADPHONE_DRIVERS, reg_val)
+    }
+
+    pub fn set_headset_detection(&mut self, enabled: bool, debounce: HeadsetDetectionDebounce, button_debounce: HeadsetButtonPressDebounce) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(0, HEADSET_DETECTION)?;
+        set_bits(&mut reg_val, enabled as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, debounce as u8, 2, 0b0001_1100);
+        set_bits(&mut reg_val, button_debounce as u8, 0, 0b0001_0011);
+        self.write_reg(0, HEADSET_DETECTION, reg_val)
     }
 
     // TODO getter

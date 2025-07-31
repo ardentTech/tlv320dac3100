@@ -139,6 +139,26 @@ fn get_headphone_drivers_ok() {
 }
 
 #[test]
+fn get_headset_detection_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(HEADSET_DETECTION, 0b1011_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    let mut enabled: bool = false;
+    let mut detected = HeadsetDetected::None;
+    let mut debounce = HeadsetDetectionDebounce::Debounce16ms;
+    let mut button_debounce = HeadsetButtonPressDebounce::Debounce0ms;
+    driver.get_headset_detection(&mut enabled, &mut detected, &mut debounce, &mut button_debounce).unwrap();
+    assert_eq!(enabled, true);
+    assert_eq!(detected, HeadsetDetected::WithoutMic);
+    assert_eq!(debounce, HeadsetDetectionDebounce::Debounce512ms);
+    assert_eq!(button_debounce, HeadsetButtonPressDebounce::Debounce16ms);
+    i2c.done();
+}
+
+#[test]
 fn get_ot_flag_false_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -502,6 +522,20 @@ fn set_headphone_drivers_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
     driver.set_headphone_drivers(true, false, HpOutputVoltage::Common1_35V, false).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_headset_detection_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(HEADSET_DETECTION, 0b0000_0000),
+        i2c_page_set(0),
+        i2c_reg_write(HEADSET_DETECTION, 0b1000_1110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
+    driver.set_headset_detection(true, HeadsetDetectionDebounce::Debounce128ms, HeadsetButtonPressDebounce::Debounce16ms).unwrap();
     i2c.done();
 }
 
