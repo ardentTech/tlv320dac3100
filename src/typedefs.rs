@@ -1,6 +1,12 @@
 // // TODO unit test all try_froms
 
 #[derive(Debug, PartialEq)]
+pub enum BdivClkin {
+    DacClk = 0x0,
+    DacModClk = 0x1,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum CdivClkin {
     Mclk = 0x0,
     Bclk = 0x1,
@@ -174,6 +180,25 @@ impl TryFrom<u8> for HeadsetDetectionDebounce {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum HpMode {
+    Default = 0x0,
+    CurrentBoost = 0x1,
+    CurrentBoostX2 = 0x3,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HpScdDebounce {
+    Time0us = 0x0,
+    Time8us = 0x1,
+    Time16us = 0x2,
+    Time32us = 0x3,
+    Time64us = 0x4,
+    Time128us = 0x5,
+    Time256us = 0x6,
+    Time512us = 0x7,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum HpOutputVoltage {
     Common1_35V = 0x00,
     Common1_5V = 0x01,
@@ -254,6 +279,18 @@ impl TryFrom<u8> for OutputStage {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum PgaRampDown {
+    Time0ms = 0x0,
+    Time3_04ms = 0x1,
+    Time7_62ms = 0x2,
+    Time12_2ms = 0x3,
+    Time15_3ms = 0x4,
+    Time19_8ms = 0x5,
+    Time24_4ms = 0x6,
+    Time30_5ms = 0x7,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum PllClkin {
     Mclk = 0x0,
     Bclk = 0x1,
@@ -271,6 +308,30 @@ impl TryFrom<u8> for PllClkin {
             _ => Err(())
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PrimaryBclkOutput {
+    InternalBclk = 0x0,
+    SecondaryBclk = 0x1,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SecondaryBclkOutput {
+    PrimaryBclk = 0x0,
+    InternalBclk = 0x1,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PrimaryWclkOutput {
+    InternalDacFs = 0x0,
+    SecondaryWclk = 0x2,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SecondaryWclkOutput {
+    PrimaryWclk = 0x0,
+    InternalDacFs = 0x1,
 }
 
 #[derive(Debug, PartialEq)]
