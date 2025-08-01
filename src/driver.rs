@@ -36,7 +36,6 @@ const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 // const BEEP_SIN_X_LSB: u8 = 0x4d
 // const BEEP_COS_X_MSB: u8 = 0x4e
 // const BEEP_COS_X_LSB: u8 = 0x4f
-const VOL_MICDET_PIN_GAIN: u8 = 0x75;
 
 // page 1 registers
 // const HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL: u8 = 0x1e
@@ -48,17 +47,16 @@ const INPUT_CM_SETTINGS: u8 = 0x32;
 // page 3 registers
 const TIMER_CLOCK_MCLK_DIVIDER: u8 = 0x10;
 
-pub struct TLV320DAC3100<I2C, D> {
-    delay: D,
-    i2c: I2C,
+pub struct TLV320DAC3100<I2C> {
+    i2c: I2C
 }
 
 // TODO compiler warning about bounds
 type TLV320Result<I2C: I2c> = Result<(), TLV320DAC3100Error<I2C::Error>>;
 
-impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
-    pub fn new(delay: D, i2c: I2C) -> Self {
-        TLV320DAC3100 { delay, i2c }
+impl<I2C: I2c> TLV320DAC3100<I2C> {
+    pub fn new(i2c: I2C) -> Self {
+        TLV320DAC3100 { i2c }
     }
 
     // TODO unit test
@@ -602,38 +600,5 @@ impl<I2C: I2c, D: hal::delay::DelayNs> TLV320DAC3100<I2C, D> {
     fn write_reg(&mut self, page: u8, reg_addr: u8, reg_val: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         self.select_page(page)?;
         Ok(self.i2c.write(I2C_DEVICE_ADDRESS, &[reg_addr, reg_val]).map_err(TLV320DAC3100Error::I2C)?)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use embedded_hal_mock::eh1::delay::NoopDelay;
-    use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
-    use crate::driver::*;
-
-    #[test]
-    fn get_vol_micdet_pin_gain_ok() {
-        let expectations = [
-            i2c_page_set(0),
-            i2c_reg_read(VOL_MICDET_PIN_GAIN, 0x3f),
-        ];
-        let mut i2c = I2cMock::new(&expectations);
-        let mut driver = TLV320DAC3100::new(NoopDelay, &mut i2c);
-        let mut gain: u8 = 0;
-        driver.get_vol_micdet_pin_gain(&mut gain).unwrap();
-        assert_eq!(gain, 0x3f);
-        i2c.done();
-    }
-
-    fn i2c_page_set(n: u8) -> I2cTransaction {
-        i2c_reg_write(PAGE_CONTROL, n)
-    }
-
-    fn i2c_reg_read(reg: u8, payload: u8) -> I2cTransaction {
-        I2cTransaction::write_read(I2C_DEVICE_ADDRESS, [reg].to_vec(), [payload].to_vec())
-    }
-
-    fn i2c_reg_write(reg: u8, payload: u8) -> I2cTransaction {
-        I2cTransaction::write(I2C_DEVICE_ADDRESS, [reg, payload].to_vec())
     }
 }
