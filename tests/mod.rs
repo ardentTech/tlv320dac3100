@@ -693,13 +693,13 @@ fn set_input_cm_settings_ok() {
 fn set_int1_control_register_ok() {
     let expectations = [
         i2c_page_set(0),
-        i2c_reg_read(INT1_CONTROL_REGISTER, 0b0001_0010),
+        i2c_reg_read(INT1_CONTROL_REGISTER, 0b0000_0000),
         i2c_page_set(0),
-        i2c_reg_write(INT1_CONTROL_REGISTER, 0b1001_0010),
+        i2c_reg_write(INT1_CONTROL_REGISTER, 0b1110_1101),
     ];
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(&mut i2c);
-    driver.set_int1_control_register(true).unwrap();
+    driver.set_int1_control_register(true, true, true, true, true, true).unwrap();
     i2c.done();
 }
 

@@ -324,6 +324,13 @@ pub enum PrimaryBclkOutput {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum RightBeepMode {
+    IndependentControl = 0x0,
+    LeftToRight = 0x1,
+    RightToLeft = 0x2,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum SecondaryBclkOutput {
     PrimaryBclk = 0x0,
     InternalBclk = 0x1,
