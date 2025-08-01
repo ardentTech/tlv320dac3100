@@ -4,6 +4,24 @@ use tlv320dac3100::registers::*;
 use tlv320dac3100::typedefs::*;
 
 #[test]
+fn get_class_d_spk_driver_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CLASS_D_SPK_DRIVER, 0b0000_1001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut gain = OutputStage::Gain6dB;
+    let mut muted = false;
+    let mut gains_applied = false;
+    driver.get_class_d_spk_driver(&mut gain, &mut muted, &mut gains_applied).unwrap();
+    assert_eq!(gain, OutputStage::Gain12dB);
+    assert!(muted);
+    assert!(gains_applied);
+    i2c.done();
+}
+
+#[test]
 fn get_clkout_m_val_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -281,6 +299,20 @@ fn get_vol_micdet_pin_sar_adc_ok() {
 fn set_class_d_speaker_amplifier_ok() {
     let expectations = [
         i2c_page_set(1),
+        i2c_reg_read(CLASS_D_SPEAKER_AMPLIFIER, 0b0000_0110),
+        i2c_page_set(1),
+        i2c_reg_write(CLASS_D_SPEAKER_AMPLIFIER, 0b1000_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_class_d_spk_amp(true).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_class_d_spk_driver_ok() {
+    let expectations = [
+        i2c_page_set(1),
         i2c_reg_read(CLASS_D_SPK_DRIVER, 0b0000_0000),
         i2c_page_set(1),
         i2c_reg_write(CLASS_D_SPK_DRIVER, 0b0001_0100),
@@ -289,11 +321,6 @@ fn set_class_d_speaker_amplifier_ok() {
     let mut driver = TLV320DAC3100::new(&mut i2c);
     driver.set_class_d_spk_driver(OutputStage::Gain18dB, false).unwrap();
     i2c.done();
-}
-
-#[test]
-fn set_class_d_spk_driver_ok() {
-
 }
 
 #[test]
@@ -649,6 +676,20 @@ fn set_hpr_driver_ok() {
 }
 
 #[test]
+fn set_input_cm_settings_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(INPUT_CM_SETTINGS, 0b0011_1111),
+        i2c_page_set(1),
+        i2c_reg_write(INPUT_CM_SETTINGS, 0b1111_1111),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_input_cm_settings(true, true).unwrap();
+    i2c.done();
+}
+
+#[test]
 fn set_int1_control_register_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -787,6 +828,20 @@ fn set_software_reset_ok() {
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(&mut i2c);
     driver.set_software_reset(true).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_timer_clock_mclk_divider_ok() {
+    let expectations = [
+        i2c_page_set(3),
+        i2c_reg_read(TIMER_CLOCK_MCLK_DIVIDER, 0b0000_0000),
+        i2c_page_set(3),
+        i2c_reg_write(TIMER_CLOCK_MCLK_DIVIDER, 0b1111_1111),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_timer_clock_mclk_divider(true, 127).unwrap();
     i2c.done();
 }
 

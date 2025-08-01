@@ -39,13 +39,10 @@ const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 
 // page 1 registers
 // const HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL: u8 = 0x1e
-const CLASS_D_SPEAKER_AMPLIFIER: u8 = 0x20;
 // const OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL: u8 = 0x22
 // const HP_DRIVER_CONTROL: u8 = 0x2c
-const INPUT_CM_SETTINGS: u8 = 0x32;
 
 // page 3 registers
-const TIMER_CLOCK_MCLK_DIVIDER: u8 = 0x10;
 
 pub struct TLV320DAC3100<I2C> {
     i2c: I2C
@@ -214,6 +211,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    // TODO unit test
     pub fn read_raw_reg(&mut self, page: u8, reg: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
         self.read_reg(page, reg)
     }
@@ -229,6 +227,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(self.i2c.write(I2C_DEVICE_ADDRESS, &[PAGE_CONTROL, page]).map_err(TLV320DAC3100Error::I2C)?)
     }
 
+    // TODO getter
     pub fn set_class_d_spk_amp(&mut self, powered_up: bool) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(1, CLASS_D_SPEAKER_AMPLIFIER)?;
         reg_val |= (powered_up as u8) << 7;
@@ -439,10 +438,11 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(1, HPR_DRIVER, reg_val)
     }
 
-    // TODO unit test
+    // TODO getter
     pub fn set_input_cm_settings(&mut self, ain1_floating: bool, ain2_floating: bool) -> TLV320Result<I2C> {
-        let mut reg_val = (!ain1_floating as u8) << 7;
-        reg_val |= (!ain2_floating as u8) << 6;
+        let mut reg_val = self.read_reg(1, INPUT_CM_SETTINGS)?;
+        set_bits(&mut reg_val, ain1_floating as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, ain2_floating as u8, 6, 0b0100_0000);
         self.write_reg(1, INPUT_CM_SETTINGS, reg_val)
     }
 
@@ -522,13 +522,12 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, SOFTWARE_RESET, reset as u8)
     }
 
-    // TODO unit test
+    // TODO getter
     pub fn set_timer_clock_mclk_divider(&mut self, external_mclk: bool, mclk_divider: u8) -> TLV320Result<I2C> {
         if mclk_divider == 0 || mclk_divider > 128 { return Err(TLV320DAC3100Error::InvalidArgument) }
-        let mut reg_val = (external_mclk as u8) << 7;
-        if mclk_divider < 128 {
-            reg_val |= mclk_divider;
-        }
+        let mut reg_val = self.read_reg(3, TIMER_CLOCK_MCLK_DIVIDER)?;
+        set_bits(&mut reg_val, external_mclk as u8, 7, 0b1000_0000);
+        set_bits(&mut reg_val, mclk_divider, 0, 0b0111_1111);
         self.write_reg(3, TIMER_CLOCK_MCLK_DIVIDER, reg_val)
     }
 

@@ -29,6 +29,7 @@ pub const VOL_MICDET_PIN_GAIN: u8 = 0x75;
 
 // page 1
 pub const HEADPHONE_DRIVERS: u8 = 0x1f;
+pub const CLASS_D_SPEAKER_AMPLIFIER: u8 = 0x20;
 pub const HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS: u8 = 0x21;
 pub const DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING: u8 = 0x23;
 pub const LEFT_ANALOG_VOLUME_TO_HPL: u8 = 0x24;
@@ -38,3 +39,7 @@ pub const HPL_DRIVER: u8 = 0x28;
 pub const HPR_DRIVER: u8 = 0x29;
 pub const CLASS_D_SPK_DRIVER: u8 = 0x2a;
 pub const MICBIAS: u8 = 0x2e;
+pub const INPUT_CM_SETTINGS: u8 = 0x32;
+
+// page 3
+pub const TIMER_CLOCK_MCLK_DIVIDER: u8 = 0x10;
