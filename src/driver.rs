@@ -21,7 +21,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         TLV320DAC3100 { i2c }
     }
 
-    // TODO test
     pub fn get_class_d_spk_driver(&mut self, gain: &mut OutputStage, muted: &mut bool, gains_applied: &mut bool) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CLASS_D_SPK_DRIVER)?;
         *gain = ((reg_val & 0x18) >> 3).try_into().unwrap();
@@ -65,15 +64,31 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    // TODO impl
     // TODO test
-    pub fn get_dac_flag_register_1() -> TLV320Result<I2C> {
+    pub fn get_dac_flag_register_1(
+        &mut self,
+        dac_left_powered: &mut bool,
+        hp_left_powered: &mut bool,
+        amp_left_powered: &mut bool,
+        dac_right_powered: &mut bool,
+        hp_right_powered: &mut bool,
+        amp_right_powered: &mut bool,
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_FLAG_REGISTER_1)?;
+        *dac_left_powered = ((reg_val >> 7) & 0b1) == 1;
+        *hp_left_powered = ((reg_val >> 5) & 0b1) == 1;
+        *amp_left_powered = ((reg_val >> 4) & 0b1) == 1;
+        *dac_right_powered = ((reg_val >> 3) & 0b1) == 1;
+        *hp_right_powered = ((reg_val >> 1) & 0b1) == 1;
+        *amp_right_powered = (reg_val & 0b1) == 1;
         Ok(())
     }
 
-    // TODO impl
     // TODO test
-    pub fn get_dac_flag_register_2() -> TLV320Result<I2C> {
+    pub fn get_dac_flag_register_2(&mut self, left_gain_equiv: &mut bool, right_gain_equiv: &mut bool) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_FLAG_REGISTER_2)?;
+        *left_gain_equiv = ((reg_val >> 4) & 0b1) == 1;
+        *right_gain_equiv = (reg_val & 0b1) == 1;
         Ok(())
     }
 
@@ -107,12 +122,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         let reg_val = self.read_reg(0, DAC_NDAC_VAL)?;
         *powered = (reg_val & 0b1000_0000) >> 7 == 1;
         *divider = reg_val & 0b0111_1111;
-        Ok(())
-    }
-
-    // TODO impl
-    // TODO test
-    pub fn get_dac_overflow_flags() -> TLV320Result<I2C> {
         Ok(())
     }
 
@@ -162,6 +171,16 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
 
     pub fn get_ot_flag(&mut self, ot_flag: &mut bool) -> TLV320Result<I2C> {
         *ot_flag = self.read_reg(0, OT_FLAG)? >> 1 == 0; // active low
+        Ok(())
+
+    }
+
+    // TODO test
+    pub fn get_overflow_flags(&mut self, left: &mut bool, right: &mut bool, barrel_shifter: &mut bool) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(1, OVERFLOW_FLAGS)?;
+        *left = ((reg_val >> 7) & 0b1) == 1;
+        *right = ((reg_val >> 6) & 0b1) == 1;
+        *barrel_shifter = ((reg_val >> 5) & 0b1) == 1;
         Ok(())
     }
 
@@ -226,11 +245,14 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, BCLK_N_VAL, reg_val)
     }
 
-    // TODO impl
     // TODO getter
     // TODO test
     pub fn set_beep_length(&mut self, samples: u32) -> TLV320Result<I2C> {
-        Ok(())
+        if samples > 16777215 { return Err(TLV320DAC3100Error::InvalidArgument) }
+
+        self.write_reg(0, BEEP_LENGTH_MSB, ((samples >> 16) & 0xff) as u8)?;
+        self.write_reg(0, BEEP_LENGTH_MSB, ((samples >> 8) & 0xff) as u8)?;
+        self.write_reg(0, BEEP_LENGTH_MSB, (samples & 0xff) as u8)
     }
 
     // TODO impl
@@ -468,11 +490,12 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, DATASLOT_OFFSET_PROGRAMMABILITY, offset)
     }
 
-    // TODO impl
     // TODO getter
     // TODO test
-    pub fn set_din_control(&mut self) -> TLV320Result<I2C> {
-        Ok(())
+    pub fn set_din_control(&mut self, din_control: DinControl) -> TLV320Result<I2C> {
+        let mut reg_val = self.read_reg(0, DIN_CONTROL)?;
+        set_bits(&mut reg_val, din_control as u8, 1, 0b0000_0110);
+        self.write_reg(0, DIN_CONTROL, reg_val)
     }
 
     // TODO impl

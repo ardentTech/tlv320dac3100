@@ -105,6 +105,13 @@ pub enum DacRightOutputMixerRouting {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum DinControl {
+    Disabled = 0x0,
+    Enabled = 0x1,
+    Gpi = 0x2,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Gpio1Mode {
     Disabled = 0x0,
     Input = 0x1,
