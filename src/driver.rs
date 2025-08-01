@@ -214,6 +214,10 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    pub fn read_raw_reg(&mut self, page: u8, reg: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
+        self.read_reg(page, reg)
+    }
+
     fn read_reg(&mut self, page: u8, reg: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
         self.select_page(page)?;
         let mut buf = [0u8];
@@ -526,66 +530,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
             reg_val |= mclk_divider;
         }
         self.write_reg(3, TIMER_CLOCK_MCLK_DIVIDER, reg_val)
-    }
-
-    pub fn setup(&mut self) -> TLV320Result<I2C> {
-        // p49
-        self.select_page(0)?; // is this needed or will reset do it?
-        self.set_software_reset(true)?;
-        self.set_clock_gen_muxing(PllClkin::Mclk, CodecClkin::PllClk)?;
-        self.set_pll_j_value(8u8)?;
-        self.set_pll_d_value(0u16)?;
-        self.set_pll_p_and_r_values(true, 1u8, 1u8)?;
-        self.set_dac_ndac_val(true, 8u8)?;
-        self.set_dac_ndac_val(true, 2u8)?;
-        self.set_dac_dosr_val(128u16)?;
-
-        // i2s
-        self.set_codec_interface_control_1(CodecInterface::I2S, CodecInterfaceWordLength::Word16Bits, false, false)?;
-
-        // select processing block PRB_P11
-        self.set_dac_processing_block_selection(11u8)?;
-        // 0x01 0x04 (page 8)
-
-        // misc
-        self.set_vol_micdet_pin_sar_adc(false, false, VolumeControlHysteresis::HysteresisNone, VolumeControlThroughput::Rate15_625Hz)?;
-
-        // program analog blocks
-        self.set_headphone_drivers(false, false, HpOutputVoltage::Common1_35V, false)?;
-        self.set_hp_output_drivers_pop_removal_settings(false, HpPowerOn::Time1_22s, HpRampUp::Time3_9ms)?;
-        self.set_dac_l_and_dac_r_output_mixer_routing(DacLeftOutputMixerRouting::LeftChannelMixerAmplifier, false, false, DacRightOutputMixerRouting::RightChannelMixerAmplifier, false, false)?;
-
-        // unmute and set gain of output driver
-        // 0x28 0x06
-        self.set_hpl_driver(0, false)?;
-        // 0x29 0x06
-        self.set_hpr_driver(0, false)?;
-        // 0x2a 0x1c
-        self.set_class_d_spk_driver(OutputStage::Gain24dB, false)?;
-
-        // power up output drivers
-        // 0x1f 0xc2 (1100_0010)
-        self.set_headphone_drivers(true, true, HpOutputVoltage::Common1_35V, false)?;
-        // 0x20 0x86
-        self.set_class_d_spk_amp(false)?;
-        // 0x24 0x92 (10010010)
-        self.set_left_analog_volume_to_hpl(true, 18u8)?;
-        // 0x25 0x92 (10010010)
-        self.set_right_analog_volume_to_hpr(true, 18u8)?;
-        // 0x26 0x92 (10010010)
-        self.set_left_analog_volume_to_spk(true, 18u8)?;
-
-        // Apply waiting time determined by the de-pop settings and the soft-stepping settings
-        // of the driver gain or poll page 1 / register 63
-
-        // power up DAC channels and set digital gain
-        self.set_dac_data_path_setup(false, false, LeftDataPath::Left, RightDataPath::Right, SoftStepping::OneStepPerPeriod)?;
-        self.set_dac_left_volume_control(-22.0)?;
-        self.set_dac_right_volume_control(-22.0)?;
-        // unmute digital volume control
-        self.set_dac_volume_control(false, false, VolumeControl::IndependentChannels)?;
-
-        Ok(())
     }
 
     pub fn set_vol_micdet_pin_sar_adc(&mut self, pin_control: bool, use_mclk: bool, hysteresis: VolumeControlHysteresis, throughput: VolumeControlThroughput) -> TLV320Result<I2C> {
