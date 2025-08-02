@@ -64,7 +64,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    // TODO test
     pub fn get_dac_flag_register_1(
         &mut self,
         dac_left_powered: &mut bool,
@@ -84,7 +83,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    // TODO test
     pub fn get_dac_flag_register_2(&mut self, left_gain_equiv: &mut bool, right_gain_equiv: &mut bool) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, DAC_FLAG_REGISTER_2)?;
         *left_gain_equiv = ((reg_val >> 4) & 0b1) == 1;
@@ -131,8 +129,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    // TODO test
-    pub fn get_interrupt_flags(
+    pub fn get_interrupt_flags_dac(
         &mut self,
         hpl_scd_detected: &mut bool,
         hpr_scd_detected: &mut bool,
@@ -189,7 +186,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
 
     }
 
-    // TODO test
     pub fn get_overflow_flags(&mut self, left: &mut bool, right: &mut bool, barrel_shifter: &mut bool) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, OVERFLOW_FLAGS)?;
         *left = ((reg_val >> 7) & 0b1) == 1;
@@ -207,7 +203,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
 
     pub fn get_pll_j_value(&mut self, j: &mut u8) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, PLL_J_VALUE)?;
-        *j = reg_val & 0b111111;
+        *j = reg_val & 0b11_1111;
         Ok(())
     }
 
@@ -233,12 +229,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    // TODO test
-    pub fn read_raw_reg(&mut self, page: u8, reg: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
-        self.read_reg(page, reg)
-    }
-
-    fn read_reg(&mut self, page: u8, reg: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
+    pub fn read_reg(&mut self, page: u8, reg: u8) -> Result<u8, TLV320DAC3100Error<I2C::Error>> {
         self.select_page(page)?;
         let mut buf = [0u8];
         self.i2c.write_read(I2C_DEVICE_ADDRESS, &[reg], &mut buf).map_err(TLV320DAC3100Error::I2C)?;

@@ -88,7 +88,47 @@ fn get_codec_interface_control_1_ok() {
 }
 
 #[test]
-fn get_dac_interrupt_flags() {
+fn get_dac_flag_register_1_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_FLAG_REGISTER_1, 0b1011_1011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut dac_left_powered = false;
+    let mut hp_left_powered = false;
+    let mut amp_left_powered = false;
+    let mut dac_right_powered = false;
+    let mut hp_right_powered = false;
+    let mut amp_right_powered = false;
+    driver.get_dac_flag_register_1(&mut dac_left_powered, &mut hp_left_powered, &mut amp_left_powered, &mut dac_right_powered, &mut hp_right_powered, &mut amp_right_powered).unwrap();
+    assert!(dac_left_powered);
+    assert!(hp_left_powered);
+    assert!(amp_left_powered);
+    assert!(dac_right_powered);
+    assert!(hp_right_powered);
+    assert!(amp_right_powered);
+    i2c.done();
+}
+
+#[test]
+fn get_dac_flag_register_2_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_FLAG_REGISTER_2, 0b0001_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut left_gain_equiv = false;
+    let mut right_gain_equiv = false;
+    driver.get_dac_flag_register_2(&mut left_gain_equiv, &mut right_gain_equiv).unwrap();
+    assert!(left_gain_equiv);
+    assert!(right_gain_equiv);
+    i2c.done();
+}
+
+#[test]
+fn get_dac_interrupt_flags_ok() {
     let expectations = [
         i2c_page_set(0),
         i2c_reg_read(DAC_INTERRUPT_FLAGS_STICKY_BITS, 0b1111_1100),
@@ -200,6 +240,30 @@ fn get_headset_detection_ok() {
 }
 
 #[test]
+fn get_interrupt_flags_dac_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(INTERRUPT_FLAGS_DAC, 0b1111_1100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut hpl_scd_detected = false;
+    let mut hpr_scd_detected = false;
+    let mut headset_btn_pressed = false;
+    let mut headset_insertion_detected = false;
+    let mut left_signal_gt_drc = false;
+    let mut right_signal_gt_drc = false;
+    driver.get_interrupt_flags_dac(&mut hpl_scd_detected, &mut hpr_scd_detected, &mut headset_btn_pressed, &mut headset_insertion_detected, &mut left_signal_gt_drc, &mut right_signal_gt_drc).unwrap();
+    assert!(hpl_scd_detected);
+    assert!(hpr_scd_detected);
+    assert!(headset_btn_pressed);
+    assert!(headset_insertion_detected);
+    assert!(left_signal_gt_drc);
+    assert!(right_signal_gt_drc);
+    i2c.done();
+}
+
+#[test]
 fn get_ot_flag_false_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -224,6 +288,24 @@ fn get_ot_flag_true_ok() {
     let mut ot_flag: bool = false;
     driver.get_ot_flag(&mut ot_flag).unwrap();
     assert_eq!(ot_flag, true);
+    i2c.done();
+}
+
+#[test]
+fn get_overflow_flags_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(OVERFLOW_FLAGS, 0b1110_0000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut left = false;
+    let mut right = false;
+    let mut barrel_shifter = false;
+    driver.get_overflow_flags(&mut left, &mut right, &mut barrel_shifter).unwrap();
+    assert!(left);
+    assert!(right);
+    assert!(barrel_shifter);
     i2c.done();
 }
 
@@ -292,6 +374,19 @@ fn get_vol_micdet_pin_sar_adc_ok() {
     assert!(use_mclk);
     assert_eq!(hysteresis, VolumeControlHysteresis::Hysteresis2Bits);
     assert_eq!(throughput, VolumeControlThroughput::Rate500Hz);
+    i2c.done();
+}
+
+#[test]
+fn get_read_reg_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(PLL_J_VALUE, 0b1010_1011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let j = driver.read_reg(0, PLL_J_VALUE).unwrap();
+    assert_eq!(j, 0xab);
     i2c.done();
 }
 
