@@ -110,6 +110,17 @@ pub enum DinControl {
     Enabled = 0x1,
     Gpi = 0x2,
 }
+impl TryFrom<u8> for DinControl {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(DinControl::Disabled),
+            0x1 => Ok(DinControl::Enabled),
+            0x2 => Ok(DinControl::Gpi),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Gpio1Mode {
@@ -296,6 +307,22 @@ pub enum PgaRampDown {
     Time24_4ms = 0x6,
     Time30_5ms = 0x7,
 }
+impl TryFrom<u8> for PgaRampDown {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(PgaRampDown::Time0ms),
+            0x1 => Ok(PgaRampDown::Time3_04ms),
+            0x2 => Ok(PgaRampDown::Time7_62ms),
+            0x3 => Ok(PgaRampDown::Time12_2ms),
+            0x4 => Ok(PgaRampDown::Time15_3ms),
+            0x5 => Ok(PgaRampDown::Time19_8ms),
+            0x6 => Ok(PgaRampDown::Time24_4ms),
+            0x7 => Ok(PgaRampDown::Time30_5ms),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum PllClkin {
@@ -328,6 +355,17 @@ pub enum RightBeepMode {
     IndependentControl = 0x0,
     LeftToRight = 0x1,
     RightToLeft = 0x2,
+}
+impl TryFrom<u8> for RightBeepMode {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(RightBeepMode::IndependentControl),
+            0x1 => Ok(RightBeepMode::LeftToRight),
+            0x2 => Ok(RightBeepMode::RightToLeft),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
