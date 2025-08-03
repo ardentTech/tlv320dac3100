@@ -31,7 +31,6 @@ pub const INT2_CONTROL_REGISTER: u8 = 0x31;
 pub const GPIO1_IN_OUT_PIN_CONTROL: u8 = 0x33;
 pub const DIN_CONTROL: u8 = 0x36;
 pub const DAC_PROCESSING_BLOCK_SECTION: u8 = 0x3c;
-
 pub const DAC_DATA_PATH_SETUP: u8 = 0x3f;
 pub const DAC_VOLUME_CONTROL: u8 = 0x40;
 pub const DAC_LEFT_VOLUME_CONTROL: u8 = 0x41;

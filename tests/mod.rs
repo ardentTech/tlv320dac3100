@@ -4,6 +4,31 @@ use tlv320dac3100::registers::*;
 use tlv320dac3100::typedefs::*;
 
 #[test]
+fn get_bclk_n_val_ok() {
+
+}
+
+#[test]
+fn get_beep_cos_x_ok() {
+
+}
+
+#[test]
+fn get_beep_length_ok() {
+
+}
+
+#[test]
+fn get_beep_sin_x_ok() {
+
+}
+
+#[test]
+fn get_class_d_spk_amp_ok() {
+
+}
+
+#[test]
 fn get_class_d_spk_driver_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -88,6 +113,31 @@ fn get_codec_interface_control_1_ok() {
 }
 
 #[test]
+fn get_codec_interface_control_2_ok() {
+
+}
+
+#[test]
+fn get_codec_secondary_interface_control_1_ok() {
+
+}
+
+#[test]
+fn get_codec_secondary_interface_control_2_ok() {
+
+}
+
+#[test]
+fn get_codec_secondary_interface_control_3_ok() {
+
+}
+
+#[test]
+fn get_dac_data_path_setup_ok() {
+
+}
+
+#[test]
 fn get_dac_flag_register_1_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -152,6 +202,16 @@ fn get_dac_interrupt_flags_ok() {
 }
 
 #[test]
+fn get_dac_l_and_dac_r_output_mixer_routing_ok() {
+
+}
+
+#[test]
+fn get_dac_left_volume_control_ok() {
+
+}
+
+#[test]
 fn get_dac_mdac_val_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -198,6 +258,45 @@ fn get_dac_processing_block_selection_ok() {
 }
 
 #[test]
+fn get_dac_right_volume_control_ok() {
+
+}
+
+#[test]
+fn get_dac_volume_control_ok() {
+
+}
+
+#[test]
+fn get_din_control_ok() {
+
+}
+#[test]
+fn get_drc_control_1_ok() {
+
+}
+
+#[test]
+fn get_drc_control_2_ok() {
+
+}
+
+#[test]
+fn get_drc_control_3_ok() {
+
+}
+
+#[test]
+fn get_gpio1_io_pin_control_ok() {
+
+}
+
+#[test]
+fn get_headphone_and_speaker_amplifier_error_control_ok() {
+
+}
+
+#[test]
 fn get_headphone_drivers_ok() {
     let expectations = [
         i2c_page_set(1),
@@ -240,6 +339,41 @@ fn get_headset_detection_ok() {
 }
 
 #[test]
+fn get_hp_driver_control_ok() {
+
+}
+
+#[test]
+fn get_hpl_driver_ok() {
+
+}
+
+#[test]
+fn get_hpr_driver_ok() {
+
+}
+
+#[test]
+fn get_i2c_bus_condition_ok() {
+
+}
+
+#[test]
+fn get_input_cm_settings_ok() {
+
+}
+
+#[test]
+fn get_int1_control_register_ok() {
+
+}
+
+#[test]
+fn get_int2_control_register_ok() {
+
+}
+
+#[test]
 fn get_interrupt_flags_dac_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -261,6 +395,26 @@ fn get_interrupt_flags_dac_ok() {
     assert!(left_signal_gt_drc);
     assert!(right_signal_gt_drc);
     i2c.done();
+}
+
+#[test]
+fn get_left_analog_volume_to_hpl_ok() {
+
+}
+
+#[test]
+fn get_left_analog_volume_to_spk_ok() {
+
+}
+
+#[test]
+fn get_left_beep_generator_ok() {
+
+}
+
+#[test]
+fn get_micbias_ok() {
+
 }
 
 #[test]
@@ -289,6 +443,11 @@ fn get_ot_flag_true_ok() {
     driver.get_ot_flag(&mut ot_flag).unwrap();
     assert_eq!(ot_flag, true);
     i2c.done();
+}
+
+#[test]
+fn get_output_driver_pga_ramp_down_period_control_ok() {
+
 }
 
 #[test]
@@ -358,6 +517,21 @@ fn get_pll_p_and_r_values_ok() {
 }
 
 #[test]
+fn get_right_analog_volume_to_hpr_ok() {
+
+}
+
+#[test]
+fn get_right_beep_generator_ok() {
+
+}
+
+#[test]
+fn get_timer_clock_mclk_divider_ok() {
+
+}
+
+#[test]
 fn get_vol_micdet_pin_sar_adc_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -378,7 +552,7 @@ fn get_vol_micdet_pin_sar_adc_ok() {
 }
 
 #[test]
-fn get_read_reg_ok() {
+fn read_reg_ok() {
     let expectations = [
         i2c_page_set(0),
         i2c_reg_read(PLL_J_VALUE, 0b1010_1011),
@@ -388,6 +562,28 @@ fn get_read_reg_ok() {
     let j = driver.read_reg(0, PLL_J_VALUE).unwrap();
     assert_eq!(j, 0xab);
     i2c.done();
+}
+
+#[test]
+fn set_bclk_n_val_ok() {
+
+}
+
+#[test]
+fn set_beep_length_ok() {
+
+}
+
+
+#[test]
+fn set_beep_cos_x_ok() {
+
+}
+
+
+#[test]
+fn set_beep_sin_x_ok() {
+
 }
 
 #[test]
@@ -476,6 +672,26 @@ fn set_codec_interface_control_1() {
     let mut driver = TLV320DAC3100::new(&mut i2c);
     driver.set_codec_interface_control_1(CodecInterface::I2S, CodecInterfaceWordLength::Word16Bits, false, false).unwrap();
     i2c.done();
+}
+
+#[test]
+fn set_codec_interface_control_2_ok() {
+
+}
+
+#[test]
+fn set_codec_secondary_interface_control_1_ok() {
+
+}
+
+#[test]
+fn set_codec_secondary_interface_control_2_ok() {
+
+}
+
+#[test]
+fn set_codec_secondary_interface_control_3_ok() {
+
 }
 
 #[test]
@@ -643,6 +859,31 @@ fn set_dac_volume_control_ok() {
 }
 
 #[test]
+fn set_data_slot_offset_programmability_ok() {
+
+}
+
+#[test]
+fn set_din_control_ok() {
+
+}
+
+#[test]
+fn set_drc_control_1_ok() {
+
+}
+
+#[test]
+fn set_drc_control_2_ok() {
+
+}
+
+#[test]
+fn set_drc_control_3_ok() {
+
+}
+
+#[test]
 fn set_micbias_ok() {
     let expectations = [
         i2c_page_set(1),
@@ -713,6 +954,16 @@ fn set_headset_detection_ok() {
 }
 
 #[test]
+fn set_headphone_and_speaker_amplifier_error_control_ok() {
+
+}
+
+#[test]
+fn set_hp_driver_control_ok() {
+
+}
+
+#[test]
 fn set_hp_output_drivers_pop_removal_settings_ok() {
     let expectations = [
         i2c_page_set(1),
@@ -771,6 +1022,11 @@ fn set_hpr_driver_ok() {
 }
 
 #[test]
+fn set_i2c_bus_condition_ok() {
+
+}
+
+#[test]
 fn set_input_cm_settings_ok() {
     let expectations = [
         i2c_page_set(1),
@@ -796,6 +1052,11 @@ fn set_int1_control_register_ok() {
     let mut driver = TLV320DAC3100::new(&mut i2c);
     driver.set_int1_control_register(true, true, true, true, true, true).unwrap();
     i2c.done();
+}
+
+#[test]
+fn set_int2_control_register_ok() {
+
 }
 
 #[test]
@@ -840,6 +1101,11 @@ fn set_left_analog_volume_to_spk_ok() {
     let mut driver = TLV320DAC3100::new(&mut i2c);
     driver.set_left_analog_volume_to_spk(true, 67u8).unwrap();
     i2c.done();
+}
+
+#[test]
+fn set_left_beep_generator_ok() {
+
 }
 
 #[test]

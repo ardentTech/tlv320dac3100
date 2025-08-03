@@ -166,6 +166,23 @@ pub enum Gpio1Mode {
     BclkOut = 0x8,
     WclkOut = 0x9,
 }
+impl TryFrom<u8> for Gpio1Mode {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(Gpio1Mode::Disabled),
+            0x1 => Ok(Gpio1Mode::Input),
+            0x2 => Ok(Gpio1Mode::Gpi),
+            0x3 => Ok(Gpio1Mode::Gpo),
+            0x4 => Ok(Gpio1Mode::ClkOut),
+            0x5 => Ok(Gpio1Mode::Int1),
+            0x6 => Ok(Gpio1Mode::Int2),
+            0x8 => Ok(Gpio1Mode::BclkOut),
+            0x9 => Ok(Gpio1Mode::WclkOut),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum HeadsetButtonPressDebounce {
@@ -235,6 +252,17 @@ pub enum HpMode {
     CurrentBoost = 0x1,
     CurrentBoostX2 = 0x3,
 }
+impl TryFrom<u8> for HpMode {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HpMode::Default),
+            0x1 => Ok(HpMode::CurrentBoost),
+            0x3 => Ok(HpMode::CurrentBoostX2),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum HpScdDebounce {
@@ -246,6 +274,22 @@ pub enum HpScdDebounce {
     Time128us = 0x5,
     Time256us = 0x6,
     Time512us = 0x7,
+}
+impl TryFrom<u8> for HpScdDebounce {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HpScdDebounce::Time0us),
+            0x1 => Ok(HpScdDebounce::Time8us),
+            0x2 => Ok(HpScdDebounce::Time16us),
+            0x3 => Ok(HpScdDebounce::Time32us),
+            0x4 => Ok(HpScdDebounce::Time64us),
+            0x5 => Ok(HpScdDebounce::Time128us),
+            0x6 => Ok(HpScdDebounce::Time256us),
+            0x7 => Ok(HpScdDebounce::Time512us),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
