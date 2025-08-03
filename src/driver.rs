@@ -107,6 +107,82 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    // TODO test
+    pub fn get_codec_interface_control_2(
+        &mut self,
+        bclk_inverted: &mut bool,
+        bclk_wclk_always_active: &mut bool,
+        bdiv_clkin: &mut BdivClkin
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, CODEC_INTERFACE_CONTROL_2)?;
+        *bclk_inverted = (reg_val & 0b0000_1000) == 1;
+        *bclk_wclk_always_active = (reg_val & 0b0000_0100) == 1;
+        *bdiv_clkin = (reg_val & 0b11).try_into().unwrap();
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_codec_secondary_interface_control_1(
+        &mut self,
+        bclk_from_gpio1: &mut bool,
+        wclk_from_gpio1: &mut bool,
+        din_from_gpio1: &mut bool
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_1)?;
+        *bclk_from_gpio1 = (reg_val & 0b1110_0000) == 1;
+        *wclk_from_gpio1 = (reg_val & 0b0001_1100) == 1;
+        *din_from_gpio1 = (reg_val & 0b0000_0011) == 1;
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_codec_secondary_interface_control_2(
+        &mut self,
+        secondary_bclk: &mut bool,
+        secondary_wclk: &mut bool,
+        secondary_din: &mut bool
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_2)?;
+        *secondary_bclk = (reg_val & 0b0000_1000) == 1;
+        *secondary_wclk = (reg_val & 0b0000_0100) == 1;
+        *secondary_din = (reg_val & 0b0000_0001) == 1;
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_codec_secondary_interface_control_3(
+        &mut self,
+        primary_bclk: &mut PrimaryBclkOutput,
+        secondary_bclk: &mut SecondaryBclkOutput,
+        primary_wclk: &mut PrimaryWclkOutput,
+        secondary_wclk: &mut SecondaryWclkOutput
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_3)?;
+        *primary_bclk = (reg_val & 0b1000_0000).try_into().unwrap();
+        *secondary_bclk = (reg_val & 0b0100_0000).try_into().unwrap();
+        *primary_wclk = (reg_val & 0b0011_0000).try_into().unwrap();
+        *secondary_wclk = (reg_val & 0b0000_1100).try_into().unwrap();
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_dac_data_path_setup(
+        &mut self,
+        left_powered: &mut bool,
+        right_powered: &mut bool,
+        left_data_path: &mut LeftDataPath,
+        right_data_path: &mut RightDataPath,
+        soft_stepping: &mut SoftStepping
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DAC_DATA_PATH_SETUP)?;
+        *left_powered = (reg_val & 0b1000_0000) == 1;
+        *right_powered = (reg_val & 0b0100_0000) == 1;
+        *left_data_path = (reg_val & 0b0011_0000).try_into().unwrap();
+        *right_data_path = (reg_val & 0b0000_1100).try_into().unwrap();
+        *soft_stepping = (reg_val & 0b11).try_into().unwrap();
+        Ok(())
+    }
+
     pub fn get_dac_flag_register_1(
         &mut self,
         dac_left_powered: &mut bool,
@@ -149,6 +225,26 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         *headset_insert_removal_detected = (reg_val >> 4) & 0b1 == 1;
         *left_dac_signal_above_drc = (reg_val >> 3) & 0b1 == 1;
         *right_dac_signal_above_drc = (reg_val >> 2) & 0b1 == 1;
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_dac_l_and_dac_r_output_mixer_routing(
+        &mut self,
+        left_routing: &mut DacLeftOutputMixerRouting,
+        ain1_input_routed_left: &mut bool,
+        ain2_input_routed_left: &mut bool,
+        right_routing: &mut DacRightOutputMixerRouting,
+        ain2_input_routed_right: &mut bool,
+        hpl_output_routed_to_hpr: &mut bool
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(1, DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING)?;
+        *left_routing = (reg_val & 0b1100_0000).try_into().unwrap();
+        *ain1_input_routed_left = (reg_val & 0b0010_0000) == 1;
+        *ain2_input_routed_left = (reg_val & 0b0001_0000) == 1;
+        *right_routing = (reg_val & 0b1100).try_into().unwrap();
+        *ain2_input_routed_right = (reg_val & 0b10) == 1;
+        *hpl_output_routed_to_hpr = (reg_val & 0b1) == 1;
         Ok(())
     }
 
@@ -217,6 +313,46 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    // TODO test
+    pub fn get_int1_control_register(
+        &mut self,
+        headset_detect: &mut bool,
+        button_press: &mut bool,
+        use_drc_signal_power: &mut bool,
+        short_circuit: &mut bool,
+        data_overflow: &mut bool,
+        multiple_pulses: &mut bool
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, INT1_CONTROL_REGISTER)?;
+        *headset_detect = (reg_val & 0b1000_0000) == 1;
+        *button_press = (reg_val & 0b100_0000) == 1;
+        *use_drc_signal_power = (reg_val & 0b10_0000) == 1;
+        *short_circuit = (reg_val & 0b1000) == 1;
+        *data_overflow = (reg_val & 0b100) == 1;
+        *multiple_pulses = (reg_val & 0b1) == 1;
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_int2_control_register(
+        &mut self,
+        headset_detect: &mut bool,
+        button_press: &mut bool,
+        use_drc_signal_power: &mut bool,
+        short_circuit: &mut bool,
+        data_overflow: &mut bool,
+        multiple_pulses: &mut bool
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, INT2_CONTROL_REGISTER)?;
+        *headset_detect = (reg_val & 0b1000_0000) == 1;
+        *button_press = (reg_val & 0b0100_0000) == 1;
+        *use_drc_signal_power = (reg_val & 0b0010_0000) == 1;
+        *short_circuit = (reg_val & 0b0000_1000) == 1;
+        *data_overflow = (reg_val & 0b0000_0100) == 1;
+        *multiple_pulses = (reg_val & 0b0000_0001) == 1;
+        Ok(())
+    }
+
     pub fn get_headset_detection(
         &mut self,
         enabled: &mut bool,
@@ -246,6 +382,28 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         *output_voltage = ((reg_val >> 3) & 0b11).try_into().unwrap();
         *power_down_on_scd = (reg_val >> 1) & 0x1 == 1;
         *scd_detected = reg_val & 0x1 == 1;
+        Ok(())
+    }
+
+    pub fn get_hp_output_drivers_pop_removal_settings(
+        &mut self,
+        optimize_power_down_pop: &mut bool,
+        power_on: &mut HpPowerOn,
+        ramp_up: &mut HpRampUp,
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(1, HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS)?;
+        *optimize_power_down_pop = (reg_val & 0b1000_0000) == 1;
+        *power_on = (reg_val & 0b111_1000).try_into().unwrap();
+        *ramp_up = (reg_val & 0b110).try_into().unwrap();
+        Ok(())
+    }
+
+    // TODO test
+    pub fn get_hpl_driver(&mut self, pga: &mut u8, hpl_muted: &mut bool, gains_applied: &mut bool) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(1, HPL_DRIVER)?;
+        *pga = (reg_val & 0b111_1000).try_into().unwrap();
+        *hpl_muted = (reg_val & 0b100) == 1;
+        *gains_applied = (reg_val & 0b1) == 1;
         Ok(())
     }
 
@@ -282,6 +440,20 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    // TODO test
+    pub fn get_micbias(
+        &mut self,
+        power_down: &mut bool,
+        always_on: &mut bool,
+        output: &mut MicBiasOutput
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(1, MICBIAS)?;
+        *power_down = (reg_val >> 7) & 0b1 == 1;
+        *always_on = ((reg_val >> 3)& 0b1) == 1;
+        *output = (reg_val & 0b11).try_into().unwrap();
+        Ok(())
+    }
+
     pub fn get_ot_flag(&mut self, ot_flag: &mut bool) -> TLV320Result<I2C> {
         *ot_flag = self.read_reg(0, OT_FLAG)? >> 1 == 0; // active low
         Ok(())
@@ -289,7 +461,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
 
     // TODO test
     pub fn get_output_driver_pga_ramp_down_period_control(&mut self, ramp_down: &mut PgaRampDown) -> TLV320Result<I2C> {
-        let mut reg_val = self.read_reg(1, OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL)?;
+        let reg_val = self.read_reg(1, OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL)?;
         *ramp_down = ((reg_val >> 4) & 0b111).try_into().unwrap();
         Ok(())
     }
@@ -450,7 +622,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, CODEC_INTERFACE_CONTROL_1, reg_val)
     }
 
-    // TODO getter
     // TODO test
     pub fn set_codec_interface_control_2(
         &mut self,
@@ -465,7 +636,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, CODEC_INTERFACE_CONTROL_2, reg_val)
     }
 
-    // TODO getter
     // TODO test
     pub fn set_codec_secondary_interface_control_1(
         &mut self,
@@ -479,7 +649,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_1, reg_val)
     }
 
-    // TODO getter
     // TODO test
     pub fn set_codec_secondary_interface_control_2(
         &mut self,
@@ -494,7 +663,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_2, reg_val)
     }
 
-    // TODO getter
     // TODO test
     pub fn set_codec_secondary_interface_control_3(
         &mut self,
@@ -511,7 +679,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_3, reg_val)
     }
 
-    // TODO getter
     pub fn set_dac_data_path_setup(
         &mut self,
         left_powered: bool,
@@ -728,7 +895,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(1, HP_DRIVER_CONTROL, reg_val)
     }
 
-    // TODO getter
     pub fn set_hp_output_drivers_pop_removal_settings(
         &mut self,
         optimize_power_down_pop: bool,
@@ -742,7 +908,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(1, HP_OUTPUT_DRIVERS_POP_REMOVAL_SETTINGS, reg_val)
     }
 
-    // TODO getter
     pub fn set_hpl_driver(&mut self, pga: u8, hpl_muted: bool) -> TLV320Result<I2C> {
         if pga > 9 { return Err(TLV320DAC3100Error::InvalidArgument) }
 
@@ -798,7 +963,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     // TODO test
-    // TODO getter
     pub fn set_int1_control_register(
         &mut self,
         headset_detect: bool,
@@ -812,7 +976,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     // TODO test
-    // TODO getter
     pub fn set_int2_control_register(
         &mut self,
         headset_detect: bool,
@@ -853,7 +1016,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(1, LEFT_ANALOG_VOLUME_TO_SPK, reg_val)
     }
 
-    // TODO getter
     pub fn set_micbias(
         &mut self,
         power_down: bool,

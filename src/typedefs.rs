@@ -5,6 +5,16 @@ pub enum BdivClkin {
     DacClk = 0x0,
     DacModClk = 0x1,
 }
+impl TryFrom<u8> for BdivClkin {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(BdivClkin::DacClk),
+            0x1 => Ok(BdivClkin::DacModClk),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum CdivClkin {
@@ -96,12 +106,34 @@ pub enum DacLeftOutputMixerRouting {
     LeftChannelMixerAmplifier = 0x1,
     HplDriver = 0x2
 }
+impl TryFrom<u8> for DacLeftOutputMixerRouting {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(DacLeftOutputMixerRouting::None),
+            0x1 => Ok(DacLeftOutputMixerRouting::LeftChannelMixerAmplifier),
+            0x2 => Ok(DacLeftOutputMixerRouting::HplDriver),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum DacRightOutputMixerRouting {
     None = 0x0,
     RightChannelMixerAmplifier = 0x1,
     HprDriver = 0x2
+}
+impl TryFrom<u8> for DacRightOutputMixerRouting {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(DacRightOutputMixerRouting::None),
+            0x1 => Ok(DacRightOutputMixerRouting::RightChannelMixerAmplifier),
+            0x2 => Ok(DacRightOutputMixerRouting::HprDriver),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -251,6 +283,26 @@ pub enum HpPowerOn {
     Time3_04s = 0xa,
     Time6_1s = 0xb,
 }
+impl TryFrom<u8> for HpPowerOn {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HpPowerOn::Time0us),
+            0x1 => Ok(HpPowerOn::Time15_3us),
+            0x2 => Ok(HpPowerOn::Time153ms),
+            0x3 => Ok(HpPowerOn::Time1_53ms),
+            0x4 => Ok(HpPowerOn::Time15_3ms),
+            0x5 => Ok(HpPowerOn::Time76_2ms),
+            0x6 => Ok(HpPowerOn::Time153ms),
+            0x7 => Ok(HpPowerOn::Time304ms),
+            0x8 => Ok(HpPowerOn::Time153ms),
+            0x9 => Ok(HpPowerOn::Time1_22s),
+            0xa => Ok(HpPowerOn::Time3_04s),
+            0xb => Ok(HpPowerOn::Time6_1s),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum HpRampUp {
@@ -258,6 +310,18 @@ pub enum HpRampUp {
     Time0_98ms = 0x1,
     Time1_95ms = 0x2,
     Time3_9ms = 0x3,
+}
+impl TryFrom<u8> for HpRampUp {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HpRampUp::Time0ms),
+            0x1 => Ok(HpRampUp::Time0_98ms),
+            0x2 => Ok(HpRampUp::Time1_95ms),
+            0x3 => Ok(HpRampUp::Time3_9ms),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -267,6 +331,18 @@ pub enum LeftDataPath {
     Right = 0x2,
     Both = 0x3
 }
+impl TryFrom<u8> for LeftDataPath {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(LeftDataPath::Off),
+            0x1 => Ok(LeftDataPath::Left),
+            0x2 => Ok(LeftDataPath::Right),
+            0x3 => Ok(LeftDataPath::Both),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum MicBiasOutput {
@@ -274,6 +350,18 @@ pub enum MicBiasOutput {
     Powered2V = 0x1,
     Powered2_5V = 0x2,
     PoweredAVDD = 0x3,
+}
+impl TryFrom<u8> for MicBiasOutput {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(MicBiasOutput::PoweredDown),
+            0x1 => Ok(MicBiasOutput::Powered2V),
+            0x2 => Ok(MicBiasOutput::Powered2_5V),
+            0x3 => Ok(MicBiasOutput::PoweredAVDD),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -349,6 +437,16 @@ pub enum PrimaryBclkOutput {
     InternalBclk = 0x0,
     SecondaryBclk = 0x1,
 }
+impl TryFrom<u8> for PrimaryBclkOutput {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(PrimaryBclkOutput::InternalBclk),
+            0x1 => Ok(PrimaryBclkOutput::SecondaryBclk),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum RightBeepMode {
@@ -373,17 +471,47 @@ pub enum SecondaryBclkOutput {
     PrimaryBclk = 0x0,
     InternalBclk = 0x1,
 }
+impl TryFrom<u8> for SecondaryBclkOutput {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(SecondaryBclkOutput::PrimaryBclk),
+            0x1 => Ok(SecondaryBclkOutput::InternalBclk),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum PrimaryWclkOutput {
     InternalDacFs = 0x0,
     SecondaryWclk = 0x2,
 }
+impl TryFrom<u8> for PrimaryWclkOutput {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(PrimaryWclkOutput::InternalDacFs),
+            0x1 => Ok(PrimaryWclkOutput::SecondaryWclk),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum SecondaryWclkOutput {
     PrimaryWclk = 0x0,
     InternalDacFs = 0x1,
+}
+impl TryFrom<u8> for SecondaryWclkOutput {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(SecondaryWclkOutput::PrimaryWclk),
+            0x1 => Ok(SecondaryWclkOutput::InternalDacFs),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -393,12 +521,35 @@ pub enum RightDataPath {
     Left = 0x2,
     Both = 0x3
 }
+impl TryFrom<u8> for RightDataPath {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(RightDataPath::Off),
+            0x1 => Ok(RightDataPath::Right),
+            0x2 => Ok(RightDataPath::Left),
+            0x3 => Ok(RightDataPath::Both),
+            _ => Err(())
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum SoftStepping {
     OneStepPerPeriod = 0x0,
     OneStepPerTwoPeriods = 0x1,
     Disabled = 0x2
+}
+impl TryFrom<u8> for SoftStepping {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(SoftStepping::OneStepPerPeriod),
+            0x1 => Ok(SoftStepping::OneStepPerTwoPeriods),
+            0x2 => Ok(SoftStepping::Disabled),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -407,6 +558,18 @@ pub enum VolumeControl {
     LeftToRight = 0x1,
     RightToLeft = 0x2,
 }
+impl TryFrom<u8> for VolumeControl {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(VolumeControl::IndependentChannels),
+            0x1 => Ok(VolumeControl::LeftToRight),
+            0x2 => Ok(VolumeControl::RightToLeft),
+            _ => Err(())
+        }
+    }
+}
+
 
 #[derive(Debug, PartialEq)]
 pub enum VolumeControlHysteresis {
