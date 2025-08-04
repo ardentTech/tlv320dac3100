@@ -274,8 +274,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         control: &mut VolumeControl
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, DAC_VOLUME_CONTROL)?;
-        *left_muted = (reg_val & 0b1000) == 1;
-        *right_muted = (reg_val & 0b100) == 1;
+        *left_muted = ((reg_val & 0b1000) >> 3) == 1;
+        *right_muted = ((reg_val & 0b100) >> 2) == 1;
         *control = (reg_val & 0b11).try_into().unwrap();
         Ok(())
     }
@@ -285,8 +285,10 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    pub fn get_din_control(&mut self, din_control: &mut DinControl) -> TLV320Result<I2C> {
-        *din_control = self.read_reg(0, DIN_CONTROL)?.try_into().unwrap();
+    pub fn get_din_control(&mut self, din_control: &mut DinControl, input_buffer: &mut u8) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, DIN_CONTROL)?;
+        *din_control = ((reg_val & 0b110) >> 1).try_into().unwrap();
+        *input_buffer = reg_val & 0b1;
         Ok(())
     }
 
@@ -298,15 +300,15 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         hysteresis: &mut u8
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, DRC_CONTROL_1)?;
-        *left = (reg_val & 0b100_0000) == 1;
-        *right = (reg_val & 0b10_0000) == 1;
-        *threshold = reg_val & 0b1_1100;
+        *left = ((reg_val & 0b100_0000) >> 6) == 1;
+        *right = ((reg_val & 0b10_0000) >> 5) == 1;
+        *threshold = (reg_val & 0b1_1100) >> 2;
         *hysteresis = reg_val & 0b11;
         Ok(())
     }
 
     pub fn get_drc_control_2(&mut self, hold_time: &mut u8) -> TLV320Result<I2C> {
-        *hold_time = self.read_reg(0, DRC_CONTROL_2)? & 0b111_1000;
+        *hold_time = (self.read_reg(0, DRC_CONTROL_2)? & 0b111_1000) >> 3;
         Ok(())
     }
 
@@ -317,7 +319,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         decay_rate: &mut u8
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, DRC_CONTROL_3)?;
-        *attack_rate = reg_val & 0b1111_0000;
+        *attack_rate = (reg_val & 0b1111_0000) >> 4;
         *decay_rate = reg_val & 0b1111;
         Ok(())
     }
@@ -329,8 +331,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         output_value: &mut u8
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(0, GPIO1_IN_OUT_PIN_CONTROL)?;
-        *mode = (reg_val & 0b11_1100).try_into().unwrap();
-        *input_buffer_value = reg_val & 0b10;
+        *mode = ((reg_val & 0b11_1100) >> 2).try_into().unwrap();
+        *input_buffer_value = (reg_val >> 1) & 0b1;
         *output_value = reg_val & 0b1;
         Ok(())
     }
@@ -341,7 +343,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         preserve_hp_ctrl_bits: &mut bool
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL)?;
-        *preserve_spk_ctrl_bits = (reg_val & 0b10) == 1;
+        *preserve_spk_ctrl_bits = ((reg_val & 0b10) >> 1) == 1;
         *preserve_hp_ctrl_bits = (reg_val & 0b1) == 1;
         Ok(())
     }

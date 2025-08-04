@@ -436,50 +436,119 @@ fn get_dac_right_volume_control_ok() {
 
 #[test]
 fn get_dac_volume_control_ok() {
-    // let expectations = [
-    //     i2c_page_set(0),
-    //     i2c_reg_read(BEEP_LENGTH_MSB, 0b),
-    // ];
-    // let mut i2c = I2cMock::new(&expectations);
-    // let mut driver = TLV320DAC3100::new(&mut i2c);
-    // // TODO
-    // i2c.done();
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_VOLUME_CONTROL, 0b0000_1000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut left_muted = false;
+    let mut right_muted = true;
+    let mut control = VolumeControl::LeftToRight;
+    driver.get_dac_volume_control(&mut left_muted, &mut right_muted, &mut control).unwrap();
+    assert!(left_muted);
+    assert!(!right_muted);
+    assert_eq!(control, VolumeControl::IndependentChannels);
+    i2c.done();
 }
 
 #[test]
 fn get_din_control_ok() {
-    // let expectations = [
-    //     i2c_page_set(0),
-    //     i2c_reg_read(BEEP_LENGTH_MSB, 0b),
-    // ];
-    // let mut i2c = I2cMock::new(&expectations);
-    // let mut driver = TLV320DAC3100::new(&mut i2c);
-    // // TODO
-    // i2c.done();
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DIN_CONTROL, 0b0000_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut control = DinControl::Gpi;
+    let mut input_buffer = 3u8;
+    driver.get_din_control(&mut control, &mut input_buffer).unwrap();
+    assert_eq!(control, DinControl::Enabled);
+    assert_eq!(input_buffer, 0b1);
+    i2c.done();
 }
 #[test]
 fn get_drc_control_1_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DRC_CONTROL_1, 0b0100_1011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut left = false;
+    let mut right = true;
+    let mut threshold = 5u8;
+    let mut hysteresis = 2u8;
+    driver.get_drc_control_1(&mut left, &mut right, &mut threshold, &mut hysteresis).unwrap();
+    assert!(left);
+    assert!(!right);
+    assert_eq!(threshold, 2);
+    assert_eq!(hysteresis, 3);
+    i2c.done();
 }
 
 #[test]
 fn get_drc_control_2_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DRC_CONTROL_2, 0b0110_1000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut hold_time = 0u8;
+    driver.get_drc_control_2(&mut hold_time).unwrap();
+    assert_eq!(hold_time, 13);
+    i2c.done();
 }
 
 #[test]
 fn get_drc_control_3_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DRC_CONTROL_3, 0b0010_1001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut attack_rate = 0u8;
+    let mut decay_rate = 2u8;
+    driver.get_drc_control_3(&mut attack_rate, &mut decay_rate).unwrap();
+    assert_eq!(attack_rate, 2);
+    assert_eq!(decay_rate, 9);
+    i2c.done();
 }
 
 #[test]
 fn get_gpio1_io_pin_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(GPIO1_IN_OUT_PIN_CONTROL, 0b0001_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut mode = Gpio1Mode::Disabled;
+    let mut input_buffer = 0u8;
+    let mut output_value = 1u8;
+    driver.get_gpio1_io_pin_control(&mut mode, &mut input_buffer, &mut output_value).unwrap();
+    assert_eq!(mode, Gpio1Mode::Int1);
+    assert_eq!(input_buffer, 1);
+    assert_eq!(output_value, 0);
+    i2c.done();
 }
 
 #[test]
 fn get_headphone_and_speaker_amplifier_error_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL, 0b0000_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut preserve_spk_ctrl_bit = false;
+    let mut preserve_hp_ctrl_bit = true;
+    driver.get_headphone_and_speaker_amplifier_error_control(&mut preserve_spk_ctrl_bit, &mut preserve_hp_ctrl_bit).unwrap();
+    assert!(preserve_spk_ctrl_bit);
+    assert!(!preserve_hp_ctrl_bit);
+    i2c.done();
 }
 
 #[test]
