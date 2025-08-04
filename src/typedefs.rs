@@ -536,7 +536,7 @@ impl TryFrom<u8> for PrimaryWclkOutput {
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x0 => Ok(PrimaryWclkOutput::InternalDacFs),
-            0x1 => Ok(PrimaryWclkOutput::SecondaryWclk),
+            0x2 => Ok(PrimaryWclkOutput::SecondaryWclk),
             _ => Err(())
         }
     }

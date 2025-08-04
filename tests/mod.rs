@@ -5,27 +5,84 @@ use tlv320dac3100::typedefs::*;
 
 #[test]
 fn get_bclk_n_val_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BCLK_N_VAL, 0b1000_1101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut powered = false;
+    let mut divider = 12u8;
+    driver.get_bclk_n_val(&mut powered, &mut divider).unwrap();
+    assert!(powered);
+    assert_eq!(divider, 13);
+    i2c.done();
 }
 
 #[test]
 fn get_beep_cos_x_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_COS_X_MSB, 0b1001_0101),
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_COS_X_LSB, 0b0010_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut val = 0u16;
+    driver.get_beep_cos_x(&mut val).unwrap();
+    assert_eq!(val, 0b1001_0101_0010_0011);
+    i2c.done();
 }
 
 #[test]
 fn get_beep_length_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_LENGTH_MSB, 0b0101_1100),
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_LENGTH_MIDDLE_BITS, 0b0001_1000),
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_LENGTH_LSB, 0b1000_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut samples = 0u32;
+    driver.get_beep_length(&mut samples).unwrap();
+    assert_eq!(samples, 0b0101_1100_0001_1000_1000_0001);
+    i2c.done();
 }
 
 #[test]
 fn get_beep_sin_x_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_SIN_X_MSB, 0b0010_0011),
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_SIN_X_LSB, 0b1001_0101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut val = 0u16;
+    driver.get_beep_sin_x(&mut val).unwrap();
+    assert_eq!(val, 0b0010_0011_1001_0101);
+    i2c.done();
 }
 
 #[test]
-fn get_class_d_spk_amp_ok() {
-
+fn get_class_d_spk_amplifier_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(CLASS_D_SPEAKER_AMPLIFIER, 0b1000_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut powered = false;
+    let mut scd = false;
+    driver.get_class_d_spk_amplifier(&mut powered, &mut scd).unwrap();
+    assert!(powered);
+    assert!(scd);
+    i2c.done();
 }
 
 #[test]
@@ -114,27 +171,98 @@ fn get_codec_interface_control_1_ok() {
 
 #[test]
 fn get_codec_interface_control_2_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_INTERFACE_CONTROL_2, 0b0000_1101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut bclk_inverted = false;
+    let mut bclk_wclk_always_active = false;
+    let mut bdiv_clkin = BdivClkin::DacClk;
+    driver.get_codec_interface_control_2(&mut bclk_inverted, &mut bclk_wclk_always_active, &mut bdiv_clkin).unwrap();
+    assert!(bclk_inverted);
+    assert!(bclk_wclk_always_active);
+    assert_eq!(bdiv_clkin, BdivClkin::DacModClk);
+    i2c.done();
 }
 
 #[test]
 fn get_codec_secondary_interface_control_1_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_SECONDARY_INTERFACE_CONTROL_1, 0b0000_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut bclk_from_gpio1 = false;
+    let mut wclk_from_gpio1 = true;
+    let mut din_from_gpio1 = false;
+    driver.get_codec_secondary_interface_control_1(&mut bclk_from_gpio1, &mut wclk_from_gpio1, &mut din_from_gpio1).unwrap();
+    assert!(bclk_from_gpio1);
+    assert!(!wclk_from_gpio1);
+    assert!(din_from_gpio1);
+    i2c.done();
 }
 
 #[test]
 fn get_codec_secondary_interface_control_2_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_SECONDARY_INTERFACE_CONTROL_2, 0b0000_1001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut secondary_bclk = false;
+    let mut secondary_wclk = true;
+    let mut secondary_din = false;
+    driver.get_codec_secondary_interface_control_2(&mut secondary_bclk, &mut secondary_wclk, &mut secondary_din).unwrap();
+    assert!(secondary_bclk);
+    assert!(!secondary_wclk);
+    assert!(secondary_din);
+    i2c.done()
 }
 
 #[test]
 fn get_codec_secondary_interface_control_3_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_SECONDARY_INTERFACE_CONTROL_3, 0b1010_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut primary_bclk = PrimaryBclkOutput::InternalBclk;
+    let mut secondary_bclk = SecondaryBclkOutput::InternalBclk;
+    let mut primary_wclk = PrimaryWclkOutput::InternalDacFs;
+    let mut secondary_wclk = SecondaryWclkOutput::InternalDacFs;
+    driver.get_codec_secondary_interface_control_3(&mut primary_bclk, &mut secondary_bclk, &mut primary_wclk, &mut secondary_wclk).unwrap();
+    assert_eq!(primary_bclk, PrimaryBclkOutput::SecondaryBclk);
+    assert_eq!(secondary_bclk, SecondaryBclkOutput::PrimaryBclk);
+    assert_eq!(primary_wclk, PrimaryWclkOutput::SecondaryWclk);
+    assert_eq!(secondary_wclk, SecondaryWclkOutput::PrimaryWclk);
+    i2c.done()
 }
 
 #[test]
 fn get_dac_data_path_setup_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_DATA_PATH_SETUP, 0b1001_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut left_powered = false;
+    let mut right_powered = true;
+    let mut left_data_path = LeftDataPath::Off;
+    let mut right_data_path = RightDataPath::Right;
+    let mut soft_stepping = SoftStepping::Disabled;
+    driver.get_dac_data_path_setup(&mut left_powered, &mut right_powered, &mut left_data_path, &mut right_data_path, &mut soft_stepping).unwrap();
+    assert!(left_powered);
+    assert!(!right_powered);
+    assert_eq!(left_data_path, LeftDataPath::Left);
+    assert_eq!(right_data_path, RightDataPath::Off);
+    assert_eq!(soft_stepping, SoftStepping::OneStepPerTwoPeriods);
+    i2c.done();
 }
 
 #[test]
@@ -203,12 +331,47 @@ fn get_dac_interrupt_flags_ok() {
 
 #[test]
 fn get_dac_l_and_dac_r_output_mixer_routing_ok() {
-
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING, 0b1010_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut left_routing = DacLeftOutputMixerRouting::None;
+    let mut ain1_input_routed_left = false;
+    let mut ain2_input_routed_left = true;
+    let mut right_routing = DacRightOutputMixerRouting::HprDriver;
+    let mut ain2_input_routed_right = false;
+    let mut hpl_output_routed_to_hpr = true;
+    driver.get_dac_l_and_dac_r_output_mixer_routing(
+        &mut left_routing,
+        &mut ain1_input_routed_left,
+        &mut ain2_input_routed_left,
+        &mut right_routing,
+        &mut ain2_input_routed_right,
+        &mut hpl_output_routed_to_hpr
+    ).unwrap();
+    assert_eq!(left_routing, DacLeftOutputMixerRouting::HplDriver);
+    assert!(ain1_input_routed_left);
+    assert!(!ain2_input_routed_left);
+    assert_eq!(right_routing, DacRightOutputMixerRouting::RightChannelMixerAmplifier);
+    assert!(ain2_input_routed_right);
+    assert!(!hpl_output_routed_to_hpr);
+    i2c.done();
 }
 
 #[test]
 fn get_dac_left_volume_control_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_LEFT_VOLUME_CONTROL, 0b1000_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut db = 0.0f32;
+    driver.get_dac_left_volume_control(&mut db).unwrap();
+    assert_eq!(db, -63.0f32);
+    i2c.done();
 }
 
 #[test]
@@ -259,41 +422,64 @@ fn get_dac_processing_block_selection_ok() {
 
 #[test]
 fn get_dac_right_volume_control_ok() {
-
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_RIGHT_VOLUME_CONTROL, 0b0010_1110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut db = 0.0f32;
+    driver.get_dac_right_volume_control(&mut db).unwrap();
+    assert_eq!(db, 23.0f32);
+    i2c.done();
 }
 
 #[test]
 fn get_dac_volume_control_ok() {
-
+    // let expectations = [
+    //     i2c_page_set(0),
+    //     i2c_reg_read(BEEP_LENGTH_MSB, 0b),
+    // ];
+    // let mut i2c = I2cMock::new(&expectations);
+    // let mut driver = TLV320DAC3100::new(&mut i2c);
+    // // TODO
+    // i2c.done();
 }
 
 #[test]
 fn get_din_control_ok() {
-
+    // let expectations = [
+    //     i2c_page_set(0),
+    //     i2c_reg_read(BEEP_LENGTH_MSB, 0b),
+    // ];
+    // let mut i2c = I2cMock::new(&expectations);
+    // let mut driver = TLV320DAC3100::new(&mut i2c);
+    // // TODO
+    // i2c.done();
 }
 #[test]
 fn get_drc_control_1_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_drc_control_2_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_drc_control_3_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_gpio1_io_pin_control_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_headphone_and_speaker_amplifier_error_control_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -340,37 +526,37 @@ fn get_headset_detection_ok() {
 
 #[test]
 fn get_hp_driver_control_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_hpl_driver_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_hpr_driver_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_i2c_bus_condition_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_input_cm_settings_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_int1_control_register_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_int2_control_register_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -399,22 +585,22 @@ fn get_interrupt_flags_dac_ok() {
 
 #[test]
 fn get_left_analog_volume_to_hpl_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_left_analog_volume_to_spk_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_left_beep_generator_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_micbias_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -447,7 +633,7 @@ fn get_ot_flag_true_ok() {
 
 #[test]
 fn get_output_driver_pga_ramp_down_period_control_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -518,17 +704,17 @@ fn get_pll_p_and_r_values_ok() {
 
 #[test]
 fn get_right_analog_volume_to_hpr_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_right_beep_generator_ok() {
-
+    // TODO
 }
 
 #[test]
 fn get_timer_clock_mclk_divider_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -566,24 +752,24 @@ fn read_reg_ok() {
 
 #[test]
 fn set_bclk_n_val_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_beep_length_ok() {
-
+    // TODO
 }
 
 
 #[test]
 fn set_beep_cos_x_ok() {
-
+    // TODO
 }
 
 
 #[test]
 fn set_beep_sin_x_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -676,22 +862,22 @@ fn set_codec_interface_control_1() {
 
 #[test]
 fn set_codec_interface_control_2_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_codec_secondary_interface_control_1_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_codec_secondary_interface_control_2_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_codec_secondary_interface_control_3_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -860,27 +1046,27 @@ fn set_dac_volume_control_ok() {
 
 #[test]
 fn set_data_slot_offset_programmability_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_din_control_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_drc_control_1_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_drc_control_2_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_drc_control_3_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -955,12 +1141,12 @@ fn set_headset_detection_ok() {
 
 #[test]
 fn set_headphone_and_speaker_amplifier_error_control_ok() {
-
+    // TODO
 }
 
 #[test]
 fn set_hp_driver_control_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -1023,7 +1209,7 @@ fn set_hpr_driver_ok() {
 
 #[test]
 fn set_i2c_bus_condition_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -1056,7 +1242,7 @@ fn set_int1_control_register_ok() {
 
 #[test]
 fn set_int2_control_register_ok() {
-
+    // TODO
 }
 
 #[test]
@@ -1105,7 +1291,7 @@ fn set_left_analog_volume_to_spk_ok() {
 
 #[test]
 fn set_left_beep_generator_ok() {
-
+    // TODO
 }
 
 #[test]

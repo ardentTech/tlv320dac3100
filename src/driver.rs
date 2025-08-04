@@ -23,8 +23,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
 
     pub fn get_bclk_n_val(&mut self, powered: &mut bool, divider: &mut u8) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, BCLK_N_VAL)?;
-        *powered = (reg_val >> 1) & 0x1 == 1;
-        *divider = reg_val & 0x1;
+        *powered = ((reg_val >> 7) & 0b1) == 1;
+        *divider = reg_val & 0b0111_1111;
         Ok(())
     }
 
@@ -52,7 +52,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    pub fn get_class_d_spk_amp(&mut self, powered_up: &mut bool, scd: &mut bool) -> TLV320Result<I2C> {
+    pub fn get_class_d_spk_amplifier(&mut self, powered_up: &mut bool, scd: &mut bool) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, CLASS_D_SPEAKER_AMPLIFIER)?;
         *powered_up = (reg_val >> 7) & 0x1 == 1;
         *scd = reg_val & 0x1 == 1;
@@ -109,8 +109,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         bdiv_clkin: &mut BdivClkin
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CODEC_INTERFACE_CONTROL_2)?;
-        *bclk_inverted = (reg_val & 0b0000_1000) == 1;
-        *bclk_wclk_always_active = (reg_val & 0b0000_0100) == 1;
+        *bclk_inverted = ((reg_val & 0b1000) >> 3) == 1;
+        *bclk_wclk_always_active = ((reg_val & 0b100) >> 2) == 1;
         *bdiv_clkin = (reg_val & 0b11).try_into().unwrap();
         Ok(())
     }
@@ -122,9 +122,9 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         din_from_gpio1: &mut bool
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_1)?;
-        *bclk_from_gpio1 = (reg_val & 0b1110_0000) == 1;
-        *wclk_from_gpio1 = (reg_val & 0b0001_1100) == 1;
-        *din_from_gpio1 = (reg_val & 0b0000_0011) == 1;
+        *bclk_from_gpio1 = ((reg_val & 0b1110_0000) >> 5) == 0;
+        *wclk_from_gpio1 = ((reg_val & 0b0001_1100) >> 2) == 0;
+        *din_from_gpio1 = (reg_val & 0b0000_0011) == 0;
         Ok(())
     }
 
@@ -135,8 +135,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         secondary_din: &mut bool
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_2)?;
-        *secondary_bclk = (reg_val & 0b0000_1000) == 1;
-        *secondary_wclk = (reg_val & 0b0000_0100) == 1;
+        *secondary_bclk = ((reg_val & 0b0000_1000) >> 3)== 1;
+        *secondary_wclk = ((reg_val & 0b0000_0100) >> 2) == 1;
         *secondary_din = (reg_val & 0b0000_0001) == 1;
         Ok(())
     }
@@ -149,10 +149,10 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         secondary_wclk: &mut SecondaryWclkOutput
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_3)?;
-        *primary_bclk = (reg_val & 0b1000_0000).try_into().unwrap();
-        *secondary_bclk = (reg_val & 0b0100_0000).try_into().unwrap();
-        *primary_wclk = (reg_val & 0b0011_0000).try_into().unwrap();
-        *secondary_wclk = (reg_val & 0b0000_1100).try_into().unwrap();
+        *primary_bclk = ((reg_val & 0b1000_0000) >> 7).try_into().unwrap();
+        *secondary_bclk = ((reg_val & 0b0100_0000) >> 6).try_into().unwrap();
+        *primary_wclk = ((reg_val & 0b0011_0000) >> 4).try_into().unwrap();
+        *secondary_wclk = ((reg_val & 0b0000_1100) >> 2).try_into().unwrap();
         Ok(())
     }
 
@@ -165,10 +165,10 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         soft_stepping: &mut SoftStepping
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(0, DAC_DATA_PATH_SETUP)?;
-        *left_powered = (reg_val & 0b1000_0000) == 1;
-        *right_powered = (reg_val & 0b0100_0000) == 1;
-        *left_data_path = (reg_val & 0b0011_0000).try_into().unwrap();
-        *right_data_path = (reg_val & 0b0000_1100).try_into().unwrap();
+        *left_powered = ((reg_val & 0b1000_0000) >> 7) == 1;
+        *right_powered = ((reg_val & 0b0100_0000) >> 6) == 1;
+        *left_data_path = ((reg_val & 0b0011_0000) >> 4).try_into().unwrap();
+        *right_data_path = ((reg_val & 0b0000_1100) >> 2).try_into().unwrap();
         *soft_stepping = (reg_val & 0b11).try_into().unwrap();
         Ok(())
     }
@@ -228,17 +228,17 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         hpl_output_routed_to_hpr: &mut bool
     ) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, DAC_L_AND_DAC_R_OUTPUT_MIXER_ROUTING)?;
-        *left_routing = (reg_val & 0b1100_0000).try_into().unwrap();
-        *ain1_input_routed_left = (reg_val & 0b0010_0000) == 1;
-        *ain2_input_routed_left = (reg_val & 0b0001_0000) == 1;
-        *right_routing = (reg_val & 0b1100).try_into().unwrap();
-        *ain2_input_routed_right = (reg_val & 0b10) == 1;
+        *left_routing = ((reg_val & 0b1100_0000) >> 6).try_into().unwrap();
+        *ain1_input_routed_left = ((reg_val & 0b0010_0000) >> 5) == 1;
+        *ain2_input_routed_left = ((reg_val & 0b0001_0000) >> 4) == 1;
+        *right_routing = ((reg_val & 0b1100) >> 2).try_into().unwrap();
+        *ain2_input_routed_right = ((reg_val & 0b10) >> 1) == 1;
         *hpl_output_routed_to_hpr = (reg_val & 0b1) == 1;
         Ok(())
     }
 
     pub fn get_dac_left_volume_control(&mut self, db: &mut f32) -> TLV320Result<I2C> {
-        *db = self.read_reg(0, DAC_LEFT_VOLUME_CONTROL)? as f32;
+        *db = ((self.read_reg(0, DAC_LEFT_VOLUME_CONTROL)? as i8) as f32) / 2.0;
         Ok(())
     }
 
@@ -263,7 +263,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     pub fn get_dac_right_volume_control(&mut self, db: &mut f32) -> TLV320Result<I2C> {
-        *db = self.read_reg(0, DAC_RIGHT_VOLUME_CONTROL)? as f32;
+        *db = ((self.read_reg(0, DAC_RIGHT_VOLUME_CONTROL)? as i8) as f32) / 2.0;
         Ok(())
     }
 
