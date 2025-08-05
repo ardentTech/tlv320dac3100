@@ -861,7 +861,16 @@ fn get_ot_flag_true_ok() {
 
 #[test]
 fn get_output_driver_pga_ramp_down_period_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL, 0b0001_1101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut ramp_down = PgaRampDown::Time0ms;
+    driver.get_output_driver_pga_ramp_down_period_control(&mut ramp_down).unwrap();
+    assert_eq!(ramp_down, PgaRampDown::Time3_04ms);
+    i2c.done();
 }
 
 #[test]
@@ -1013,24 +1022,68 @@ fn read_reg_ok() {
 
 #[test]
 fn set_bclk_n_val_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(BCLK_N_VAL, 0b1000_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_bclk_n_val(true, 2).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_beep_length_invalid_samples_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_beep_length(16777216u32).unwrap_err();
+    i2c.done();
 }
 
 #[test]
 fn set_beep_length_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_LENGTH_MSB, 0b1111_1111),
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_LENGTH_MIDDLE_BITS, 0b1111_1111),
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_LENGTH_LSB, 0b1111_1100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_beep_length(16777212u32).unwrap();
+    i2c.done();
 }
 
 
 #[test]
 fn set_beep_cos_x_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_COS_X_MSB, 0b100),
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_COS_X_LSB, 0b1101_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_beep_cos_x(1234).unwrap();
+    i2c.done();
 }
 
 
 #[test]
 fn set_beep_sin_x_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_SIN_X_MSB, 0b1101_0100),
+        i2c_page_set(0),
+        i2c_reg_write(BEEP_SIN_X_LSB, 0b0011_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_beep_sin_x(54321).unwrap();
+    i2c.done();
 }
 
 #[test]
@@ -1123,22 +1176,61 @@ fn set_codec_interface_control_1() {
 
 #[test]
 fn set_codec_interface_control_2_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_INTERFACE_CONTROL_2, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(CODEC_INTERFACE_CONTROL_2, 0b0000_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_codec_interface_control_2(false, true, BdivClkin::DacClk).unwrap();
+    i2c.done();
 }
 
 #[test]
 fn set_codec_secondary_interface_control_1_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(CODEC_SECONDARY_INTERFACE_CONTROL_1, 0b0000_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_codec_secondary_interface_control_1(true, false, true).unwrap();
+    i2c.done();
 }
 
 #[test]
 fn set_codec_secondary_interface_control_2_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_SECONDARY_INTERFACE_CONTROL_2, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(CODEC_SECONDARY_INTERFACE_CONTROL_2, 0b0000_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_codec_secondary_interface_control_2(false, true, false).unwrap();
+    i2c.done();
 }
 
 #[test]
 fn set_codec_secondary_interface_control_3_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(CODEC_SECONDARY_INTERFACE_CONTROL_3, 0b1111_1111),
+        i2c_page_set(0),
+        i2c_reg_write(CODEC_SECONDARY_INTERFACE_CONTROL_3, 0b0000_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_codec_secondary_interface_control_3(
+        PrimaryBclkOutput::InternalBclk,
+        SecondaryBclkOutput::PrimaryBclk,
+        PrimaryWclkOutput::InternalDacFs,
+        SecondaryWclkOutput::PrimaryWclk
+    ).unwrap();
+    i2c.done();
 }
 
 #[test]
@@ -1307,27 +1399,102 @@ fn set_dac_volume_control_ok() {
 
 #[test]
 fn set_data_slot_offset_programmability_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_write(DATA_SLOT_OFFSET_PROGRAMMABILITY, 0b0001_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_data_slot_offset_programmability(17u8).unwrap();
+    i2c.done();
 }
 
 #[test]
 fn set_din_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DIN_CONTROL, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(DIN_CONTROL, 0b0000_0100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_din_control(DinControl::Gpi).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_drc_control_1_invalid_hysteresis_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_1(true, false, 6u8, 7u8).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_drc_control_1_invalid_threshold_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_1(true, false, 9u8, 2u8).unwrap_err();
+    i2c.done();
 }
 
 #[test]
 fn set_drc_control_1_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DRC_CONTROL_1, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(DRC_CONTROL_1, 0b0101_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_1(true, false, 5u8, 2u8).unwrap();
+    i2c.done();
 }
 
 #[test]
 fn set_drc_control_2_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DRC_CONTROL_2, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(DRC_CONTROL_2, 0b0110_1000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_2(13u8).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_drc_control_3_invalid_attack_rate_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_3(18u8, 2u8).unwrap_err();
+    i2c.done();
+}
+
+#[test]
+fn set_drc_control_3_invalid_decay_rate_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_3(6u8, 17u8).unwrap_err();
+    i2c.done();
 }
 
 #[test]
 fn set_drc_control_3_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DRC_CONTROL_3, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(DRC_CONTROL_3, 0b0111_1111),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_drc_control_3(7u8, 15u8).unwrap();
+    i2c.done();
 }
 
 #[test]
@@ -1402,12 +1569,35 @@ fn set_headset_detection_ok() {
 
 #[test]
 fn set_headphone_and_speaker_amplifier_error_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL, 0b0),
+        i2c_page_set(1),
+        i2c_reg_write(HEADPHONE_AND_SPEAKER_AMPLIFIER_ERROR_CONTROL,0b0000_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_headphone_and_speaker_amplifier_error_control(false, true).unwrap();
+    i2c.done();
 }
 
 #[test]
 fn set_hp_driver_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HP_DRIVER_CONTROL, 0b0),
+        i2c_page_set(1),
+        i2c_reg_write(HP_DRIVER_CONTROL,0b0011_1010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_hp_driver_control(
+        HpScdDebounce::Time8us,
+        HpMode::CurrentBoostX2,
+        false,
+        true
+    ).unwrap();
+    i2c.done();
 }
 
 #[test]
@@ -1470,7 +1660,16 @@ fn set_hpr_driver_ok() {
 
 #[test]
 fn set_i2c_bus_condition_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(I2C_BUS_CONDITION, 0b1101_0010),
+        i2c_page_set(0),
+        i2c_reg_write(I2C_BUS_CONDITION, 0b1111_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_i2c_bus_condition(true).unwrap();
+    i2c.done();
 }
 
 #[test]
@@ -1503,7 +1702,16 @@ fn set_int1_control_register_ok() {
 
 #[test]
 fn set_int2_control_register_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(INT2_CONTROL_REGISTER, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(INT2_CONTROL_REGISTER, 0b10001100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_int2_control_register(true, false, false, true, true, false).unwrap();
+    i2c.done();
 }
 
 #[test]
@@ -1551,8 +1759,25 @@ fn set_left_analog_volume_to_spk_ok() {
 }
 
 #[test]
+fn set_left_beep_generator_invalid_volume_err() {
+    let mut i2c = I2cMock::new(&[]);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_right_beep_generator(RightBeepMode::IndependentControl, 64u8).unwrap_err();
+    i2c.done();
+}
+
+#[test]
 fn set_left_beep_generator_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(RIGHT_BEEP_GENERATOR, 0b0),
+        i2c_page_set(0),
+        i2c_reg_write(RIGHT_BEEP_GENERATOR, 0b0000_0101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_right_beep_generator(RightBeepMode::IndependentControl, 5u8).unwrap();
+    i2c.done();
 }
 
 #[test]

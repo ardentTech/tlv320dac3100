@@ -281,7 +281,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     pub fn get_data_slot_offset_programmability(&mut self, offset: &mut u8) -> TLV320Result<I2C> {
-        *offset = self.read_reg(0, DATASLOT_OFFSET_PROGRAMMABILITY)?;
+        *offset = self.read_reg(0, DATA_SLOT_OFFSET_PROGRAMMABILITY)?;
         Ok(())
     }
 
@@ -649,8 +649,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         if samples > 16777215 { return Err(TLV320DAC3100Error::InvalidArgument) }
 
         self.write_reg(0, BEEP_LENGTH_MSB, ((samples >> 16) & 0xff) as u8)?;
-        self.write_reg(0, BEEP_LENGTH_MSB, ((samples >> 8) & 0xff) as u8)?;
-        self.write_reg(0, BEEP_LENGTH_MSB, (samples & 0xff) as u8)
+        self.write_reg(0, BEEP_LENGTH_MIDDLE_BITS, ((samples >> 8) & 0xff) as u8)?;
+        self.write_reg(0, BEEP_LENGTH_LSB, (samples & 0xff) as u8)
     }
 
     pub fn set_beep_cos_x(&mut self, val: u16) -> TLV320Result<I2C> {
@@ -730,9 +730,9 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         wclk_from_gpio1: bool,
         din_from_gpio1: bool
     ) -> TLV320Result<I2C> {
-        let mut reg_val = (bclk_from_gpio1 as u8) << 5;
-        set_bits(&mut reg_val, wclk_from_gpio1 as u8, 2, 0b1100);
-        set_bits(&mut reg_val, din_from_gpio1 as u8, 0, 0b11);
+        let mut reg_val = (!bclk_from_gpio1 as u8) << 5;
+        set_bits(&mut reg_val, !wclk_from_gpio1 as u8, 2, 0b1100);
+        set_bits(&mut reg_val, !din_from_gpio1 as u8, 0, 0b11);
         self.write_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_1, reg_val)
     }
 
@@ -758,9 +758,9 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_3)?;
         set_bits(&mut reg_val, primary_bclk as u8, 7, 0b1000_0000);
-        set_bits(&mut reg_val, secondary_bclk as u8, 6, 0b0100_0000);
-        set_bits(&mut reg_val, primary_wclk as u8, 3, 0b0001_1000);
-        set_bits(&mut reg_val, secondary_wclk as u8, 1, 0b0000_110);
+        set_bits(&mut reg_val, secondary_bclk as u8, 6, 0b100_0000);
+        set_bits(&mut reg_val, primary_wclk as u8, 4, 0b11_0000);
+        set_bits(&mut reg_val, secondary_wclk as u8, 2, 0b1100);
         self.write_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_3, reg_val)
     }
 
@@ -865,7 +865,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     pub fn set_data_slot_offset_programmability(&mut self, offset: u8) -> TLV320Result<I2C> {
-        self.write_reg(0, DATASLOT_OFFSET_PROGRAMMABILITY, offset)
+        self.write_reg(0, DATA_SLOT_OFFSET_PROGRAMMABILITY, offset)
     }
 
     pub fn set_din_control(&mut self, din_control: DinControl) -> TLV320Result<I2C> {
@@ -881,7 +881,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         threshold: u8,
         hysteresis: u8
     ) -> TLV320Result<I2C> {
-        if hysteresis > 3 { return Err(TLV320DAC3100Error::InvalidArgument) }
+        if threshold > 7 || hysteresis > 3 { return Err(TLV320DAC3100Error::InvalidArgument) }
         let mut reg_val = self.read_reg(0, DRC_CONTROL_1)?;
         set_bits(&mut reg_val, left as u8, 6, 0b0100_0000);
         set_bits(&mut reg_val, right as u8, 5, 0b0010_0000);
@@ -1131,7 +1131,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(1, RIGHT_ANALOG_VOLUME_TO_HPR, reg_val)
     }
 
-    // TODO test
     pub fn set_right_beep_generator(&mut self, mode: RightBeepMode, volume: u8) -> TLV320Result<I2C> {
         if volume > 63 { return Err(TLV320DAC3100Error::InvalidArgument) }
 
