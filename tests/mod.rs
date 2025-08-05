@@ -595,37 +595,150 @@ fn get_headset_detection_ok() {
 
 #[test]
 fn get_hp_driver_control_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HP_DRIVER_CONTROL, 0b0110_1100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut scd_debounce = HpScdDebounce::Time0us;
+    let mut mode = HpMode::Default;
+    let mut hpl_lineout = false;
+    let mut hpr_lineout = true;
+    driver.get_hp_driver_control(&mut scd_debounce, &mut mode, &mut hpl_lineout, &mut hpr_lineout).unwrap();
+    assert_eq!(scd_debounce, HpScdDebounce::Time32us);
+    assert_eq!(mode, HpMode::CurrentBoost);
+    assert!(hpl_lineout);
+    assert!(!hpr_lineout);
+    i2c.done();
 }
 
 #[test]
 fn get_hpl_driver_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HPL_DRIVER, 0b0100_1110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut pga = 0u8;
+    let mut hpl_muted = false;
+    let mut gains_applied = true;
+    driver.get_hpl_driver(&mut pga, &mut hpl_muted, &mut gains_applied).unwrap();
+    assert_eq!(pga, 9u8);
+    assert!(hpl_muted);
+    assert!(!gains_applied);
+    i2c.done();
 }
 
 #[test]
 fn get_hpr_driver_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(HPR_DRIVER, 0b0100_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut pga = 0u8;
+    let mut hpl_muted = true;
+    let mut gains_applied = false;
+    driver.get_hpr_driver(&mut pga, &mut hpl_muted, &mut gains_applied).unwrap();
+    assert_eq!(pga, 8u8);
+    assert!(!hpl_muted);
+    assert!(gains_applied);
+    i2c.done();
 }
 
 #[test]
 fn get_i2c_bus_condition_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(I2C_BUS_CONDITION, 0b0010_0000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut accepted = false;
+    driver.get_i2c_bus_condition(&mut accepted).unwrap();
+    assert!(accepted);
+    i2c.done();
 }
 
 #[test]
 fn get_input_cm_settings_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(INPUT_CM_SETTINGS, 0b1000_0000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut ain1_to_cm = false;
+    let mut ain2_to_cm = true;
+    driver.get_input_cm_settings(&mut ain1_to_cm, &mut ain2_to_cm).unwrap();
+    assert!(ain1_to_cm);
+    assert!(!ain2_to_cm);
+    i2c.done();
 }
 
 #[test]
 fn get_int1_control_register_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(INT1_CONTROL_REGISTER, 0b1011_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut headset_detect = false;
+    let mut button_press = true;
+    let mut use_drc_signal_power = false;
+    let mut short_circuit = true;
+    let mut data_overflow = false;
+    let mut multiple_pulses = true;
+    driver.get_int1_control_register(
+        &mut headset_detect,
+        &mut button_press,
+        &mut use_drc_signal_power,
+        &mut short_circuit,
+        &mut data_overflow,
+        &mut multiple_pulses
+    ).unwrap();
+    assert!(headset_detect);
+    assert!(!button_press);
+    assert!(use_drc_signal_power);
+    assert!(!short_circuit);
+    assert!(data_overflow);
+    assert!(!multiple_pulses);
+    i2c.done();
 }
 
 #[test]
 fn get_int2_control_register_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(INT2_CONTROL_REGISTER, 0b0101_1011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut headset_detect = true;
+    let mut button_press = false;
+    let mut use_drc_signal_power = true;
+    let mut short_circuit = false;
+    let mut data_overflow = true;
+    let mut multiple_pulses = false;
+    driver.get_int2_control_register(
+        &mut headset_detect,
+        &mut button_press,
+        &mut use_drc_signal_power,
+        &mut short_circuit,
+        &mut data_overflow,
+        &mut multiple_pulses
+    ).unwrap();
+    assert!(!headset_detect);
+    assert!(button_press);
+    assert!(!use_drc_signal_power);
+    assert!(short_circuit);
+    assert!(!data_overflow);
+    assert!(multiple_pulses);
+    i2c.done();
 }
 
 #[test]
@@ -654,22 +767,68 @@ fn get_interrupt_flags_dac_ok() {
 
 #[test]
 fn get_left_analog_volume_to_hpl_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(LEFT_ANALOG_VOLUME_TO_HPL, 0b1101_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut route_to_hpl = false;
+    let mut gain = 0u8;
+    driver.get_left_analog_volume_to_hpl(&mut route_to_hpl, &mut gain).unwrap();
+    assert!(route_to_hpl);
+    assert_eq!(gain, 83);
+    i2c.done();
 }
 
 #[test]
 fn get_left_analog_volume_to_spk_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(LEFT_ANALOG_VOLUME_TO_SPK, 0b1010_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut route_to_class_d = false;
+    let mut gain = 0u8;
+    driver.get_left_analog_volume_to_spk(&mut route_to_class_d, &mut gain).unwrap();
+    assert!(route_to_class_d);
+    assert_eq!(gain, 33);
+    i2c.done();
 }
 
 #[test]
 fn get_left_beep_generator_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(LEFT_BEEP_GENERATOR, 0b1000_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut enabled = false;
+    let mut volume = 0u8;
+    driver.get_left_beep_generator(&mut enabled, &mut volume).unwrap();
+    assert!(enabled);
+    assert_eq!(volume, 3);
+    i2c.done();
 }
 
 #[test]
 fn get_micbias_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(MICBIAS, 0b1000_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut power_down = false;
+    let mut always_on = true;
+    let mut output = MicBiasOutput::PoweredDown;
+    driver.get_micbias(&mut power_down, &mut always_on, &mut output).unwrap();
+    assert!(power_down);
+    assert!(!always_on);
+    assert_eq!(output, MicBiasOutput::PoweredAVDD);
+    i2c.done();
 }
 
 #[test]
@@ -773,17 +932,50 @@ fn get_pll_p_and_r_values_ok() {
 
 #[test]
 fn get_right_analog_volume_to_hpr_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(RIGHT_ANALOG_VOLUME_TO_HPR, 0b0001_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut route_to_hpr = true;
+    let mut gain = 0u8;
+    driver.get_right_analog_volume_to_hpr(&mut route_to_hpr, &mut gain).unwrap();
+    assert!(!route_to_hpr);
+    assert_eq!(gain, 18);
+    i2c.done();
 }
 
 #[test]
 fn get_right_beep_generator_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(RIGHT_BEEP_GENERATOR, 0b0010_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut mode = RightBeepMode::LeftToRight;
+    let mut volume = 0u8;
+    driver.get_right_beep_generator(&mut mode, &mut volume).unwrap();
+    assert_eq!(mode, RightBeepMode::IndependentControl);
+    assert_eq!(volume, 35);
+    i2c.done();
 }
 
 #[test]
 fn get_timer_clock_mclk_divider_ok() {
-    // TODO
+    let expectations = [
+        i2c_page_set(3),
+        i2c_reg_read(TIMER_CLOCK_MCLK_DIVIDER, 0b1111_1110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut external_mclk = false;
+    let mut mclk_divider = 0u8;
+    driver.get_timer_clock_mclk_divider(&mut external_mclk, &mut mclk_divider).unwrap();
+    assert!(external_mclk);
+    assert_eq!(mclk_divider, 126);
+    i2c.done();
 }
 
 #[test]

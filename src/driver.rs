@@ -388,10 +388,10 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         hpr_lineout: &mut bool,
     ) -> TLV320Result<I2C> {
         let mut reg_val = self.read_reg(1, HP_DRIVER_CONTROL)?;
-        *scd_debounce = (reg_val & 0b1110_0000).try_into().unwrap();
-        *mode = (reg_val & 0b1_1000).try_into().unwrap();
-        *hpl_lineout = (reg_val & 0b100) == 1;
-        *hpr_lineout = (reg_val & 0b10) == 1;
+        *scd_debounce = ((reg_val & 0b1110_0000) >> 5).try_into().unwrap();
+        *mode = ((reg_val & 0b1_1000) >> 3).try_into().unwrap();
+        *hpl_lineout = ((reg_val & 0b100) >> 2) == 1;
+        *hpr_lineout = ((reg_val & 0b10) >> 1) == 1;
         Ok(())
     }
 
@@ -410,12 +410,13 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
 
     pub fn get_hpl_driver(&mut self, pga: &mut u8, hpl_muted: &mut bool, gains_applied: &mut bool) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, HPL_DRIVER)?;
-        *pga = (reg_val & 0b111_1000).try_into().unwrap();
-        *hpl_muted = (reg_val & 0b100) == 1;
+        *pga = (reg_val & 0b111_1000) >> 3;
+        *hpl_muted = ((reg_val & 0b100) >> 2) == 1;
         *gains_applied = (reg_val & 0b1) == 1;
         Ok(())
     }
 
+    // TODO same impl as get_hpl_driver above?
     pub fn get_hpr_driver(&mut self, pga: &mut u8, hpr_muted: &mut bool, gains_applied: &mut bool) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(1, HPR_DRIVER)?;
         *pga = (reg_val >> 3) & 0b1111;
@@ -456,6 +457,26 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    fn get_int_control_register(
+        &mut self,
+        int1: bool,
+        headset_detect: &mut bool,
+        button_press: &mut bool,
+        use_drc_signal_power: &mut bool,
+        short_circuit: &mut bool,
+        data_overflow: &mut bool,
+        multiple_pulses: &mut bool
+    ) -> TLV320Result<I2C> {
+        let reg_val = self.read_reg(0, if int1 { INT1_CONTROL_REGISTER } else { INT2_CONTROL_REGISTER })?;
+        *headset_detect = ((reg_val & 0b1000_0000) >> 7) == 1;
+        *button_press = ((reg_val & 0b0100_0000) >> 6) == 1;
+        *use_drc_signal_power = ((reg_val & 0b0010_0000) >> 5) == 1;
+        *short_circuit = ((reg_val & 0b0000_1000) >> 3) == 1;
+        *data_overflow = ((reg_val & 0b0000_0100) >> 2) == 1;
+        *multiple_pulses = (reg_val & 0b0000_0001) == 1;
+        Ok(())
+    }
+
     pub fn get_int1_control_register(
         &mut self,
         headset_detect: &mut bool,
@@ -465,14 +486,15 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         data_overflow: &mut bool,
         multiple_pulses: &mut bool
     ) -> TLV320Result<I2C> {
-        let reg_val = self.read_reg(0, INT1_CONTROL_REGISTER)?;
-        *headset_detect = (reg_val & 0b1000_0000) == 1;
-        *button_press = (reg_val & 0b100_0000) == 1;
-        *use_drc_signal_power = (reg_val & 0b10_0000) == 1;
-        *short_circuit = (reg_val & 0b1000) == 1;
-        *data_overflow = (reg_val & 0b100) == 1;
-        *multiple_pulses = (reg_val & 0b1) == 1;
-        Ok(())
+        self.get_int_control_register(
+            true,
+            headset_detect,
+            button_press,
+            use_drc_signal_power,
+            short_circuit,
+            data_overflow,
+            multiple_pulses
+        )
     }
 
     pub fn get_int2_control_register(
@@ -484,14 +506,15 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         data_overflow: &mut bool,
         multiple_pulses: &mut bool
     ) -> TLV320Result<I2C> {
-        let reg_val = self.read_reg(0, INT2_CONTROL_REGISTER)?;
-        *headset_detect = (reg_val & 0b1000_0000) == 1;
-        *button_press = (reg_val & 0b0100_0000) == 1;
-        *use_drc_signal_power = (reg_val & 0b0010_0000) == 1;
-        *short_circuit = (reg_val & 0b0000_1000) == 1;
-        *data_overflow = (reg_val & 0b0000_0100) == 1;
-        *multiple_pulses = (reg_val & 0b0000_0001) == 1;
-        Ok(())
+        self.get_int_control_register(
+            false,
+            headset_detect,
+            button_press,
+            use_drc_signal_power,
+            short_circuit,
+            data_overflow,
+            multiple_pulses
+        )
     }
 
     pub fn get_left_analog_volume_to_hpl(&mut self, route_to_hpl: &mut bool, gain: &mut u8) -> TLV320Result<I2C> {
@@ -585,7 +608,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     pub fn get_timer_clock_mclk_divider(&mut self, external_mclk: &mut bool, mclk_divider: &mut u8) -> TLV320Result<I2C> {
         let reg_val = self.read_reg(3, TIMER_CLOCK_MCLK_DIVIDER)?;
         *external_mclk = ((reg_val >> 7) & 0b1) == 1;
-        *mclk_divider = reg_val & 0b0111_1111;
+        *mclk_divider = reg_val & 0b111_1111;
         Ok(())
     }
 
