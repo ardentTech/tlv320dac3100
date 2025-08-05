@@ -1512,6 +1512,20 @@ fn set_micbias_ok() {
 }
 
 #[test]
+fn set_output_driver_pga_ramp_down_period_control_ok() {
+    let expectations = [
+        i2c_page_set(1),
+        i2c_reg_read(OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL, 0b0),
+        i2c_page_set(1),
+        i2c_reg_write(OUTPUT_DRIVER_PGA_RAMP_DOWN_PERIOD_CONTROL, 0b0011_0000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_output_driver_pga_ramp_down_period_control(PgaRampDown::Time12_2ms).unwrap();
+    i2c.done();
+}
+
+#[test]
 fn set_pll_d_value_ok() {
     let expectations = [
         i2c_page_set(0),
