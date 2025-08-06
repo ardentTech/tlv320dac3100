@@ -288,19 +288,19 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    // TODO same impl as ndac_val below
-    pub fn get_dac_mdac_val(&mut self, powered: &mut bool, divider: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        let reg_val = self.read_reg(0, DAC_MDAC_VAL)?;
+    fn get_dac_xdac_val(&mut self, mdac: bool, powered: &mut bool, divider: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        let reg_val = self.read_reg(0, if mdac { DAC_MDAC_VAL } else { DAC_NDAC_VAL })?;
         *powered = get_bits(reg_val, 1, 7) == 1;
         *divider = reg_val & 0b111_1111;
         Ok(())
     }
 
+    pub fn get_dac_mdac_val(&mut self, powered: &mut bool, divider: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        self.get_dac_xdac_val(true, powered, divider)
+    }
+
     pub fn get_dac_ndac_val(&mut self, powered: &mut bool, divider: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        let reg_val = self.read_reg(0, DAC_NDAC_VAL)?;
-        *powered = get_bits(reg_val, 1, 7) == 1;
-        *divider = reg_val & 0b0111_1111;
-        Ok(())
+        self.get_dac_xdac_val(false, powered, divider)
     }
 
     pub fn get_dac_processing_block_selection(&mut self, prb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
@@ -353,8 +353,8 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
-    pub fn get_drc_control_2(&mut self, hold_time: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        *hold_time = (self.read_reg(0, DRC_CONTROL_2)? & 0b111_1000) >> 3;
+    pub fn get_drc_control_2(&mut self, hold_time: &mut HoldTime) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *hold_time = get_bits(self.read_reg(0, DRC_CONTROL_2)?, 4, 3).try_into().unwrap();
         Ok(())
     }
 
@@ -942,10 +942,9 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         self.write_reg(0, DRC_CONTROL_1, reg_val)
     }
 
-    // TODO enum instead of u8?
-    pub fn set_drc_control_2(&mut self, hold_time: u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+    pub fn set_drc_control_2(&mut self, hold_time: HoldTime) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         let mut reg_val = self.read_reg(0, DRC_CONTROL_2)?;
-        set_bits(&mut reg_val, hold_time, 3, 0b0111_1000);
+        set_bits(&mut reg_val, hold_time as u8, 3, 0b0111_1000);
         self.write_reg(0, DRC_CONTROL_2, reg_val)
     }
 
@@ -961,7 +960,6 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     pub fn set_gpio1_io_pin_control(&mut self, mode: Gpio1Mode) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         let mut reg_val = self.read_reg(0, GPIO1_IN_OUT_PIN_CONTROL)?;
         set_bits(&mut reg_val, mode as u8, 2, 0b0011_1100);
-        // TODO output value?
         self.write_reg(0, GPIO1_IN_OUT_PIN_CONTROL, reg_val)
     }
 

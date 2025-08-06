@@ -634,13 +634,13 @@ fn get_drc_control_1_ok() {
 fn get_drc_control_2_ok() {
     let expectations = [
         i2c_page_set(0),
-        i2c_reg_read(DRC_CONTROL_2, 0b0110_1000),
+        i2c_reg_read(DRC_CONTROL_2, 0b0010_1000),
     ];
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(&mut i2c);
-    let mut hold_time = 0u8;
+    let mut hold_time = HoldTime::DacWordClocks256;
     driver.get_drc_control_2(&mut hold_time).unwrap();
-    assert_eq!(hold_time, 13);
+    assert_eq!(hold_time, HoldTime::DacWordClocks512);
     i2c.done();
 }
 
@@ -1634,7 +1634,7 @@ fn set_drc_control_2_ok() {
     ];
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(&mut i2c);
-    driver.set_drc_control_2(13u8).unwrap();
+    driver.set_drc_control_2(HoldTime::DacWordClocks98304).unwrap();
     i2c.done();
 }
 

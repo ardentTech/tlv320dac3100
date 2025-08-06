@@ -247,6 +247,50 @@ impl TryFrom<u8> for HeadsetDetectionDebounce {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum HoldTime {
+    Disabled = 0x0,
+    DacWordClocks32 = 0x1,
+    DacWordClocks64 = 0x2,
+    DacWordClocks128 = 0x3,
+    DacWordClocks256 = 0x4,
+    DacWordClocks512 = 0x5,
+    DacWordClocks1024 = 0x6,
+    DacWordClocks2048 = 0x7,
+    DacWordClocks4096 = 0x8,
+    DacWordClocks8192 = 0x9,
+    DacWordClocks16384 = 0xa,
+    DacWordClocks32768 = 0xb,
+    DacWordClocks65536 = 0xc,
+    DacWordClocks98304 = 0xd,
+    DacWordClocks131072 = 0xe,
+    DacWordClocks163840 = 0xf,
+}
+impl TryFrom<u8> for HoldTime {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x0 => Ok(HoldTime::Disabled),
+            0x1 => Ok(HoldTime::DacWordClocks32),
+            0x2 => Ok(HoldTime::DacWordClocks64),
+            0x3 => Ok(HoldTime::DacWordClocks128),
+            0x4 => Ok(HoldTime::DacWordClocks256),
+            0x5 => Ok(HoldTime::DacWordClocks512),
+            0x6 => Ok(HoldTime::DacWordClocks1024),
+            0x7 => Ok(HoldTime::DacWordClocks2048),
+            0x8 => Ok(HoldTime::DacWordClocks4096),
+            0x9 => Ok(HoldTime::DacWordClocks8192),
+            0xa => Ok(HoldTime::DacWordClocks16384),
+            0xb => Ok(HoldTime::DacWordClocks32768),
+            0xc => Ok(HoldTime::DacWordClocks65536),
+            0xd => Ok(HoldTime::DacWordClocks98304),
+            0xe => Ok(HoldTime::DacWordClocks131072),
+            0xf => Ok(HoldTime::DacWordClocks163840),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum HpMode {
     Default = 0x0,
     CurrentBoost = 0x1,
