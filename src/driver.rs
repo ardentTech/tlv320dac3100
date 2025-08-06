@@ -6,8 +6,6 @@ use crate::registers::*;
 use crate::typedefs::*;
 
 pub const I2C_DEVICE_ADDRESS: u8 = 0x18;
-const MAX_DAC_VOLUME_CONTROL_DB: f32 = 24.0;
-const MIN_DAC_VOLUME_CONTROL_DB: f32 = -63.5;
 
 pub struct TLV320DAC3100<I2C> {
     i2c: I2C
@@ -32,6 +30,16 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    pub fn get_beep_cos_x_msb(&mut self, msb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *msb = self.read_reg(0, BEEP_COS_X_MSB)?;
+        Ok(())
+    }
+
+    pub fn get_beep_cos_x_lsb(&mut self, lsb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *lsb = self.read_reg(0, BEEP_COS_X_LSB)?;
+        Ok(())
+    }
+
     pub fn get_beep_length(&mut self, samples: &mut u32) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         let mut msb = (self.read_reg(0, BEEP_LENGTH_MSB)? as u32) << 16;
         let mid = (self.read_reg(0, BEEP_LENGTH_MIDDLE_BITS)? as u32) << 8;
@@ -42,10 +50,35 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    pub fn get_beep_length_msb(&mut self, msb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *msb = self.read_reg(0, BEEP_LENGTH_MSB)?;
+        Ok(())
+    }
+
+    pub fn get_beep_length_middle_bits(&mut self, middle_bits: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *middle_bits = self.read_reg(0, BEEP_LENGTH_MIDDLE_BITS)?;
+        Ok(())
+    }
+
+    pub fn get_beep_length_lsb(&mut self, lsb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *lsb = self.read_reg(0, BEEP_LENGTH_LSB)?;
+        Ok(())
+    }
+
     pub fn get_beep_sin_x(&mut self, val: &mut u16) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
         let msb = (self.read_reg(0, BEEP_SIN_X_MSB)? as u16) << 8;
         let lsb = self.read_reg(0, BEEP_SIN_X_LSB)? as u16;
         *val = msb | lsb;
+        Ok(())
+    }
+
+    pub fn get_beep_sin_x_msb(&mut self, msb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *msb = self.read_reg(0, BEEP_SIN_X_MSB)?;
+        Ok(())
+    }
+
+    pub fn get_beep_sin_x_lsb(&mut self, lsb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *lsb = self.read_reg(0, BEEP_SIN_X_LSB)?;
         Ok(())
     }
 
@@ -166,6 +199,23 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         *left_data_path = get_bits(reg_val, 2, 4).try_into().unwrap();
         *right_data_path = get_bits(reg_val, 2, 2).try_into().unwrap();
         *soft_stepping = (reg_val & 0b11).try_into().unwrap();
+        Ok(())
+    }
+
+    pub fn get_dac_dosr_val(&mut self, dosr: &mut u16) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        let msb = self.read_reg(0, DAC_DOSR_VAL_MSB)?;
+        let lsb = self.read_reg(0, DAC_DOSR_VAL_LSB)?;
+        *dosr = (msb as u16) << 8 | lsb as u16;
+        Ok(())
+    }
+
+    pub fn get_dac_dosr_val_msb(&mut self, msb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *msb = self.read_reg(0, DAC_DOSR_VAL_MSB)?;
+        Ok(())
+    }
+
+    pub fn get_dac_dosr_val_lsb(&mut self, lsb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *lsb = self.read_reg(0, DAC_DOSR_VAL_LSB)?;
         Ok(())
     }
 
@@ -564,9 +614,19 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     pub fn get_pll_d_value(&mut self, d: &mut u16) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        let msb = self.read_reg(0, PLL_D_VALUE_MSB)? & 0b11_1111;
+        let msb = self.read_reg(0, PLL_D_VALUE_MSB)?;
         let lsb = self.read_reg(0, PLL_D_VALUE_LSB)?;
         *d = (msb as u16) << 8 | lsb as u16;
+        Ok(())
+    }
+
+    pub fn get_pll_d_value_msb(&mut self, msb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *msb = self.read_reg(0, PLL_D_VALUE_MSB)?;
+        Ok(())
+    }
+
+    pub fn get_pll_d_value_lsb(&mut self, lsb: &mut u8) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        *lsb = self.read_reg(0, PLL_D_VALUE_LSB)?;
         Ok(())
     }
 
@@ -848,7 +908,7 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
     }
 
     fn set_dac_channel_volume_control(&mut self, left_channel: bool, db: f32) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
-        if db < MIN_DAC_VOLUME_CONTROL_DB || db > MAX_DAC_VOLUME_CONTROL_DB {
+        if db < -63.5f32 || db > 24.0f32 {
             return Err(TLV320DAC3100Error::InvalidArgument)
         }
 

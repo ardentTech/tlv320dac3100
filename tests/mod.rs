@@ -36,6 +36,34 @@ fn get_beep_cos_x_ok() {
 }
 
 #[test]
+fn get_beep_cos_x_msb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_COS_X_MSB, 0b1001_0101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut msb = 0u8;
+    driver.get_beep_cos_x_msb(&mut msb).unwrap();
+    assert_eq!(msb, 0b1001_0101);
+    i2c.done();
+}
+
+#[test]
+fn get_beep_cos_x_lsb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_COS_X_LSB, 0b0010_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut lsb = 0u8;
+    driver.get_beep_cos_x_lsb(&mut lsb).unwrap();
+    assert_eq!(lsb, 0b0010_0011);
+    i2c.done();
+}
+
+#[test]
 fn get_beep_length_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -54,6 +82,48 @@ fn get_beep_length_ok() {
 }
 
 #[test]
+fn get_beep_length_msb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_LENGTH_MSB, 0b0101_1100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut msb = 0u8;
+    driver.get_beep_length_msb(&mut msb).unwrap();
+    assert_eq!(msb, 0b0101_1100);
+    i2c.done();
+}
+
+#[test]
+fn get_beep_length_middle_bits_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_LENGTH_MIDDLE_BITS, 0b0101_0110),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut middle_bits = 0u8;
+    driver.get_beep_length_middle_bits(&mut middle_bits).unwrap();
+    assert_eq!(middle_bits, 0b0101_0110);
+    i2c.done();
+}
+
+#[test]
+fn get_beep_length_lsb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_LENGTH_LSB, 0b0011_1100),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut lsb = 0u8;
+    driver.get_beep_length_lsb(&mut lsb).unwrap();
+    assert_eq!(lsb, 0b0011_1100);
+    i2c.done();
+}
+
+#[test]
 fn get_beep_sin_x_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -66,6 +136,34 @@ fn get_beep_sin_x_ok() {
     let mut val = 0u16;
     driver.get_beep_sin_x(&mut val).unwrap();
     assert_eq!(val, 0b0010_0011_1001_0101);
+    i2c.done();
+}
+
+#[test]
+fn get_beep_sin_x_msb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_SIN_X_MSB, 0b0010_0011),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut msb = 0u8;
+    driver.get_beep_sin_x_msb(&mut msb).unwrap();
+    assert_eq!(msb, 0b0010_0011);
+    i2c.done();
+}
+
+#[test]
+fn get_beep_sin_x_lsb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(BEEP_SIN_X_LSB, 0b1001_0101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut lsb = 0u8;
+    driver.get_beep_sin_x_lsb(&mut lsb).unwrap();
+    assert_eq!(lsb, 0b1001_0101);
     i2c.done();
 }
 
@@ -262,6 +360,51 @@ fn get_dac_data_path_setup_ok() {
     assert_eq!(left_data_path, LeftDataPath::Left);
     assert_eq!(right_data_path, RightDataPath::Off);
     assert_eq!(soft_stepping, SoftStepping::OneStepPerTwoPeriods);
+    i2c.done();
+}
+
+#[test]
+fn get_dac_data_dosr_val_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_DOSR_VAL_MSB, 0b1001_0001),
+        i2c_page_set(0),
+        i2c_reg_read(DAC_DOSR_VAL_LSB, 0b0001_1101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut dosr_val = 0u16;
+    driver.get_dac_dosr_val(&mut dosr_val).unwrap();
+    assert_eq!(dosr_val, 0b1001_0001_0001_1101);
+    i2c.done();
+}
+
+#[test]
+fn get_dac_data_dosr_val_msb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_DOSR_VAL_MSB, 0b1001_0001),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut msb = 0u8;
+    driver.get_dac_dosr_val_msb(&mut msb).unwrap();
+    assert_eq!(msb, 0b1001_0001);
+    i2c.done();
+}
+
+
+#[test]
+fn get_dac_data_dosr_val_lsb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(DAC_DOSR_VAL_LSB, 0b0001_1101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut lsb = 0u8;
+    driver.get_dac_dosr_val_lsb(&mut lsb).unwrap();
+    assert_eq!(lsb, 0b0001_1101);
     i2c.done();
 }
 
@@ -895,15 +1038,43 @@ fn get_overflow_flags_ok() {
 fn get_pll_d_value_ok() {
     let expectations = [
         i2c_page_set(0),
-        i2c_reg_read(PLL_D_VALUE_MSB, 0x97),
+        i2c_reg_read(PLL_D_VALUE_MSB, 0b1100_0000),
         i2c_page_set(0),
-        i2c_reg_read(PLL_D_VALUE_LSB, 0x5b),
+        i2c_reg_read(PLL_D_VALUE_LSB, 0b1010_0010),
     ];
     let mut i2c = I2cMock::new(&expectations);
     let mut driver = TLV320DAC3100::new(&mut i2c);
     let mut d: u16 = 0;
     driver.get_pll_d_value(&mut d).unwrap();
-    assert_eq!(d, 0x175b);
+    assert_eq!(d, 0b1100_0000_1010_0010);
+    i2c.done();
+}
+
+#[test]
+fn get_pll_d_value_msb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(PLL_D_VALUE_MSB, 0b1100_0000),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut msb = 0u8;
+    driver.get_pll_d_value_msb(&mut msb).unwrap();
+    assert_eq!(msb, 0b1100_0000);
+    i2c.done();
+}
+
+#[test]
+fn get_pll_d_value_lsb_ok() {
+    let expectations = [
+        i2c_page_set(0),
+        i2c_reg_read(PLL_D_VALUE_LSB, 0b1001_0010),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut lsb = 0u8;
+    driver.get_pll_d_value_lsb(&mut lsb).unwrap();
+    assert_eq!(lsb, 0b1001_0010);
     i2c.done();
 }
 
