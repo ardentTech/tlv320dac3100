@@ -70,3 +70,6 @@ pub const INPUT_CM_SETTINGS: u8 = 0x32;
 
 // page 3
 pub const TIMER_CLOCK_MCLK_DIVIDER: u8 = 0x10;
+
+// page 8
+pub const DAC_COEFFICIENT_RAM_CONTROL: u8 = 0x01;

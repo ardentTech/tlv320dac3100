@@ -342,6 +342,24 @@ fn get_codec_secondary_interface_control_3_ok() {
 }
 
 #[test]
+fn get_dac_coefficient_ram_control_ok() {
+    let expectations = [
+        i2c_page_set(8),
+        i2c_reg_read(DAC_COEFFICIENT_RAM_CONTROL, 0b1101_0101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    let mut adaptive_filtering = false;
+    let mut filter_buffer_a = true;
+    let mut coefficient_buffers_switched = false;
+    driver.get_dac_coefficient_ram_control(&mut adaptive_filtering, &mut filter_buffer_a, &mut coefficient_buffers_switched).unwrap();
+    assert!(adaptive_filtering);
+    assert!(!filter_buffer_a);
+    assert!(coefficient_buffers_switched);
+    i2c.done();
+}
+
+#[test]
 fn get_dac_data_path_setup_ok() {
     let expectations = [
         i2c_page_set(0),
@@ -1401,6 +1419,20 @@ fn set_codec_secondary_interface_control_3_ok() {
         PrimaryWclkOutput::InternalDacFs,
         SecondaryWclkOutput::PrimaryWclk
     ).unwrap();
+    i2c.done();
+}
+
+#[test]
+fn set_dac_coefficient_ram_control_ok() {
+    let expectations = [
+        i2c_page_set(8),
+        i2c_reg_read(DAC_COEFFICIENT_RAM_CONTROL, 0b1011_0010),
+        i2c_page_set(8),
+        i2c_reg_write(DAC_COEFFICIENT_RAM_CONTROL, 0b1011_0101),
+    ];
+    let mut i2c = I2cMock::new(&expectations);
+    let mut driver = TLV320DAC3100::new(&mut i2c);
+    driver.set_dac_coefficient_ram_control(true, false, true).unwrap();
     i2c.done();
 }
 

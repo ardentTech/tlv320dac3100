@@ -185,6 +185,19 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         Ok(())
     }
 
+    pub fn get_dac_coefficient_ram_control(
+        &mut self,
+        adaptive_filtering: &mut bool,
+        filter_buffer_a: &mut bool,
+        coefficient_buffers_switched: &mut bool
+    ) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        let reg_val: u8 = self.read_reg(8, DAC_COEFFICIENT_RAM_CONTROL)?;
+        *adaptive_filtering = get_bits(reg_val, 1, 2) == 1;
+        *filter_buffer_a = get_bits(reg_val, 1, 1) == 1;
+        *coefficient_buffers_switched = get_bits(reg_val, 1, 0) == 1;
+        Ok(())
+    }
+
     pub fn get_dac_data_path_setup(
         &mut self,
         left_powered: &mut bool,
@@ -814,6 +827,19 @@ impl<I2C: I2c> TLV320DAC3100<I2C> {
         set_bits(&mut reg_val, primary_wclk as u8, 4, 0b11_0000);
         set_bits(&mut reg_val, secondary_wclk as u8, 2, 0b1100);
         self.write_reg(0, CODEC_SECONDARY_INTERFACE_CONTROL_3, reg_val)
+    }
+
+    pub fn set_dac_coefficient_ram_control(
+        &mut self,
+        adaptive_filtering: bool,
+        filter_buffer_a: bool,
+        coefficient_buffers_switched: bool
+    ) -> Result<(), TLV320DAC3100Error<I2C::Error>> {
+        let mut reg_val: u8 = self.read_reg(8, DAC_COEFFICIENT_RAM_CONTROL)?;
+        set_bits(&mut reg_val, adaptive_filtering as u8, 2, 0b100);
+        set_bits(&mut reg_val, filter_buffer_a as u8, 1, 0b10);
+        set_bits(&mut reg_val, coefficient_buffers_switched as u8, 0, 0b1);
+        self.write_reg(8, DAC_COEFFICIENT_RAM_CONTROL, reg_val)
     }
 
     pub fn set_dac_data_path_setup(
