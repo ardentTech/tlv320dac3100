@@ -8,7 +8,7 @@ keywords = ["embedded", "embedded-hal-driver", "dac", "analog", "digital"]
 categories = ["embedded", "no-std"]
 repository = "https://github.com/ardentTech/tlv320dac3100"
 license = "MIT OR Apache-2.0"
-exclude = ["CHANGELOG.md"]
+exclude = ["CHANGELOG.md", "tests/*"]
 readme = "README.md"
 
 [dependencies]
