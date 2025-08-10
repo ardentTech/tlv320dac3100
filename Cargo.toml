@@ -2,6 +2,14 @@
 name = "tlv320dac3100"
 version = "0.1.0"
 edition = "2024"
+authors = ["Jonathan D. Baker <jonathan@ardent.tech>"]
+description = "A driver for Texas Instruments TLV320DAC3100 module."
+keywords = ["embedded", "embedded-hal-driver", "dac", "analog", "digital"]
+categories = ["embedded", "no-std"]
+repository = "https://github.com/ardentTech/tlv320dac3100"
+license = "MIT OR Apache-2.0"
+exclude = ["CHANGELOG.md"]
+readme = "README.md"
 
 [dependencies]
 embedded-hal = "1.0.0"
