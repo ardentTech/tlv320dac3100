@@ -9,4 +9,5 @@ It supports configuration via I2C and TX/RX via I2S, and has a fixed I2C device 
 * [Adafruit_TLV320_I2S](https://github.com/adafruit/Adafruit_TLV320_I2S/tree/main)
 
 ## License
-* [MIT](https://github.com/ardentTech/tlv320dac3100/blob/main/LICENSE.txt)
+* [MIT](https://github.com/ardentTech/tlv320dac3100/blob/main/LICENSE-MIT)
+* [Apache](https://github.com/ardentTech/tlv320dac3100/blob/main/APACHE-MIT)
